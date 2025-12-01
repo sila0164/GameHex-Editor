@@ -1,0 +1,38 @@
+{
+    "text": [
+        "#EEEEEE",
+        "color"
+    ],
+    "background": [
+        "#222222",
+        "color"
+    ],
+    "highlight": [
+        "#666666",
+        "color"
+    ],
+    "accent": [
+        "#555555",
+        "color"
+    ],
+    "border": [
+        "#AAAAAA",
+        "color"
+    ],
+    "darkaccent": [
+        "#333333",
+        "color"
+    ],
+    "firstlaunch": [
+        true,
+        "bool"
+    ],
+    "language": [
+        "english",
+        "language"
+    ],
+    "wantbackups": [
+        false,
+        "bool"
+    ]
+}
