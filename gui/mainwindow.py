@@ -1,6 +1,6 @@
 import customtkinter as ctk
 from core.settings import settings
-from gui.common import Button
+from gui.common import Button, Inputbox
 
 class MainWindow:# The main window that contains everything
 
@@ -10,7 +10,7 @@ class MainWindow:# The main window that contains everything
         print('Creating Main Window')
         self.root = ctk.CTk()
         self.root.title(settings.language[12])
-        self.root.geometry("400x600")
+        self.root.geometry("450x600")
         self.main = ctk.CTkFrame(self.root, bg_color=settings.background)
         self.root.grid_rowconfigure(0, weight=1)
         self.root.grid_columnconfigure(0, weight=1)
@@ -68,9 +68,29 @@ class FileDisplay: # The text/message display at the top of the window
 
 class StatDisplay: # The main data manipulation interface
     def __init__(self, parent: ctk.CTkFrame, parentcolumn: int=2, parentrow: int=2):
-        self.statdisplay = ctk.CTkScrollableFrame(parent,
+        self.main = ctk.CTkScrollableFrame(parent,
         fg_color=settings.darkaccent,
+        scrollbar_fg_color=settings.background,
         corner_radius=0)
-        self.statdisplay.grid(row=parentrow, column=parentcolumn, sticky='NSEW')
+        self.main.grid(row=parentrow, column=parentcolumn, sticky='NSEW')
+        self.main.columnconfigure(0, weight=1)
+        self.main.columnconfigure(1, weight=0)
+        self.rowcount = 0
 
-    
+    def update(self, dictionary):
+        self.stats = dictionary # saves the dictionary to itself
+        for index, key in enumerate(self.stats): # creates an inputbox for each stat in the dictionary
+            self.main.rowconfigure(self.rowcount, weight=0) #Configures the row
+            value = self.stats[key]['value']
+            bgcolor = settings.accent
+            colorcalc = self.rowcount / 2
+            if colorcalc % 2 == 0: # Makes the backgroundcolor change for every other entry
+                bgcolor = settings.darkaccent
+            setattr(self, f'var{index}', Inputbox(self.main, self.rowcount, key, value, bgcolor))
+            self.rowcount += 1 # Counts the row up 1
+            self.horseparator = ctk.CTkFrame(self.main, height=1, fg_color=settings.border)
+            self.horseparator.grid(row=self.rowcount, column=0, columnspan=2, sticky='EW')
+            self.rowcount += 1
+            
+            
+

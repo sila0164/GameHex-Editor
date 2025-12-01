@@ -3,6 +3,7 @@ import os
 import sys
 import json
 
+
 class Settings:
     def __init__(self):
         self.is_exe = getattr(sys, 'frozen', False)
@@ -31,7 +32,7 @@ class Settings:
             'text': ["#EEEEEE", "color"],
             'background': ["#222222", 'color'],
             'highlight': ['#666666', 'color'],
-            'accent': ['#555555', 'color'],
+            'accent': ['#444444', 'color'],
             'border': ['#AAAAAA', 'color'],
             'darkaccent': ['#333333', 'color'],
             'firstlaunch': [True, 'bool'],
@@ -53,11 +54,19 @@ class Settings:
         self.wantbackups: bool = self.settings['wantbackups'][0]
         self.openfile: bool = False
 
+        # gets suites from files
+        #self.getsuites()
+
         # Creates backupfolder if there isnt any, if the user wants backups
         if self.wantbackups == True:
             print("Creating backup folder if there isn't any")
             os.makedirs('Backups', exist_ok=True)
-    
+
+    def getsuites(self):
+        from Suites.GhostReconBreakpoint import GR_WeaponDBEntry
+        self.supportedfiles = ['GR_WeaponDBEntry']
+        self.searchpatterns = {'GR_WeaponDBEntry': GR_WeaponDBEntry.read}
+
     def getdir(self) -> str:
         return self.root
     

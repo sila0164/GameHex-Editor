@@ -37,7 +37,7 @@ class Button:
         self.background = "#222222"
         self.border = "#AAAAAA"
         self.text = "#EEEEEE"
-        self.accent = '#555555'
+        self.accent = '#444444'
 
     def getsettings(self):
         self.darkaccent = settings.darkaccent
@@ -47,7 +47,32 @@ class Button:
         self.border = settings.border
         self.text = settings.text
 
+class Inputbox:
+    def __init__(self, parent, row, name, value, backgroundcolor):
+        print(name, value)
         
+        self.main = ctk.CTkFrame(parent,
+        fg_color=backgroundcolor, # creates the frame
+        corner_radius=0)
+
+        self.main.grid(column=0, row=row, sticky='NSEW') # places it in the parent
+
+        self.main.columnconfigure(0, weight=0)
+        self.main.columnconfigure(1, weight=1)
+        self.main.columnconfigure(2, weight=0)
+
+        self.name = ctk.CTkLabel(self.main, text_color=settings.text, fg_color=backgroundcolor,
+            text=name)
+        self.name.grid(column=0, row=0, sticky='W', padx=4, pady=4)
+        
+        self.value = ctk.StringVar()
+        self.value.set(value)
+        self.input = ctk.CTkEntry(self.main, textvariable=self.value, fg_color=backgroundcolor,
+                                  text_color=settings.text,
+                                  border_color=settings.border,
+                                  width=100)
+        self.input.grid(column=2, row=0, sticky='E', padx=4, pady=4)
+
             
 
 
