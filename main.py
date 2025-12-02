@@ -5,6 +5,7 @@ from tkinter import filedialog
 class Main:
     def __init__(self):
         from core.settings import settings
+        self.firstopen = 0
         # creates main window
         self.window = MainWindow()
         self.buttonbox = ButtonBox(self.window.main)
@@ -17,16 +18,18 @@ class Main:
         self.buttonbox.placebutton(self.revert.button)
         self.revertoriginal = Button(self.buttonbox.main, 16, self.revertoriginalstats) #state=False) # Is temporarily a print button for testing
         self.buttonbox.placebutton(self.revertoriginal.button)
-        #self.write = self.buttonbox.addbutton('write', self.write, state='false', row=9)
+        self.write = Button(self.buttonbox.main, 18, self.writetofile, state=False)
+        self.buttonbox.placebutton(self.write.button)
         self.exit = Button(self.buttonbox.main, 0, self.exitprogram)
         self.buttonbox.placebutton(self.exit.button, row=10)
         # Makes the window stay as loop
         self.window.root.mainloop()
 
     def openfile(self):
-        print('Opening File')
+        print('Main: Opening File')
         tempfilepath = filedialog.askopenfilename(title="Open a File")
         if tempfilepath: # If the user selected a file continue
+            self.filedisplay.changetext(17)
             tempfile = File(tempfilepath) # creates the openend file as a fileclass
             self.supportcheck(tempfile) # Function that checks whether a file is supported
 
@@ -41,7 +44,10 @@ class Main:
         if support == 'unsupported': # Informs the user the file isnt supported and doesnt continue
             popup = Popup(11, 14, root=self.window.root)
             popup.buttonsackknowledge(15)
+            self.filedisplay.changetext(13)
         if continueload == True:
+            self.firstopen += 1
+            self.write.changestate(True)
             tempfile.mount() # Mounts the file as core.file.current
             #searchpattern = settings.searchpatterns[file.current.extension] # figures out what searchpattern to use
             #searchpattern() # runs the searchpattern
@@ -49,26 +55,42 @@ class Main:
             readweaponentry()
             self.statdisplayinit()
 
+    def writetofile(self):
+        print('Main: Writing to file')
+        self.filedisplay.changetext(19)
+        writeok = self.statdisplay.sendnewvaluestofile()
+        if writeok == True:
+            file.current.write()
+            self.filedisplay.changetext(20, file.current.fullname)
+        else:
+            popup = Popup(22, 21)
+            popup.buttonsackknowledge(15)
+            self.filedisplay.changetext(file.current.fullname)
+        
+
     def statdisplayinit(self):
-        statdict = file.current.getstats()
-        self.statdisplay.update(statdict)
+        if self.firstopen > 1:
+            print('Main: Clearing statdisplay')
+            self.statdisplay.clear()
+        self.statdisplay.update()
+        self.filedisplay.changetext(file.current.fullname)
 
     def revertstats(self):
         if file.current != None and self.revert:
-            print('Reverting settings')
+            print('Main: Reverting settings')
             file.current.revert()
             self.revert.changestate(False)
         else:
-            print('No file mounted, could not revert.')
+            print('Main: No file mounted, could not revert.')
     
     def revertoriginalstats(self):
         if file.current != None:
             print(file.current)
         else:
-            print('No file is loaded')
+            print('Main: No file is loaded')
 
     def exitprogram(self):
-        print('Exiting program')
+        print('Main: Exiting program')
         self.window.exit()
         
 

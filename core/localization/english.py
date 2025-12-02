@@ -2,7 +2,6 @@ english = {
     #Buttons:
     "copyu64": "Copy file's u64 value to clipboard",
     "ignore": "Ignore",
-    "apply": "Apply",
     "calculate": "Calculate",
     "revertoriginal": "Revert to\noriginal",
     #Text:
@@ -23,5 +22,11 @@ english = {
     14: "The selected file did not get recognized as a supported fileformat by the program.",
     15: 'OK',
     16: 'Print File',
-    19: ["Warning", "Any changes to the current file that has not been written, will be lost."],
+    17: 'Opening file, please wait...',
+    18: 'Write',
+    19: 'Writing to file...',
+    20: 'File written!',
+    21: 'Something is not a valid number, please check your values.\n\nNothing has been written to file.',
+    22: 'Invalid Value',
+    30: ["Warning", "Any changes to the current file that has not been written, will be lost."],
 }

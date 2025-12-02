@@ -21,13 +21,13 @@ class Settings:
 
         # Loads Settings file if it exists
         if os.path.exists(self.settingsfile):
-            print('Importing settings from file')
+            print('Settings: Importing settings from file')
             with open(self.settingsfile, "r", encoding='utf-8') as f:
                 self.settings = json.load(f)
         
         # Creates a new if it doesn't
         else:
-            print('No settings file, creating new with defaults')
+            print('Settings: No settings file, creating new with defaults')
             self.settings = {
             'text': ["#EEEEEE", "color"],
             'background': ["#222222", 'color'],
@@ -59,7 +59,7 @@ class Settings:
 
         # Creates backupfolder if there isnt any, if the user wants backups
         if self.wantbackups == True:
-            print("Creating backup folder if there isn't any")
+            print("Settings: Creating backup folder if there isn't any")
             os.makedirs('Backups', exist_ok=True)
 
     def getsuites(self):
@@ -84,16 +84,16 @@ class Settings:
         setting = self.settings[name] # sets the current setting as setting
         success = False
         if isinstance(value, bool) and setting[1] == 'bool': # check if the bool is a bool
-            print(f"Changed: {name} to: {value}")
+            print(f"Settings: Changed: {name} to: {value}")
             success = True
         if isinstance(value, str) and setting[1] == 'color': # checks the string is a valid rgb hex value
             if isinstance(value, str) and value.startswith("#") and len(value) == 7:
                 int(value[1:], 16) 
-                print(f'Changed: {name} to: {value}')
+                print(f'Settings: Changed: {name} to: {value}')
                 success = True
         if isinstance(value, str) and setting[1] == 'language': # checks if its a supported language
             if value in languages:
-                print(f'Changed language to: {value}')
+                print(f'Settings: Changed language to: {value}')
                 success = True
         if success == True: # If any checks were succesful it sets the value and saves to settings.json
             setting[0] = value
@@ -101,19 +101,19 @@ class Settings:
                 json.dump(self.settings, f, indent=4)
                 return True
         else: # if checks were unsuccessful it return False
-            print(f"Could not change: {name} to: {value} as it was not a: {self.settings[name][1]}")
+            print(f"Settings: Could not change: {name} to: {value} as it was not a: {self.settings[name][1]}")
             return False
 
 settings = None
 
 def initsettings() -> bool:
     global settings
-    print('Initializing settings')
+    print('Settings: Initializing settings')
     try:
         settings = Settings()
         settingsinit = True
-        print('Settings Initialized')
+        print('Settings: Settings Initialized')
     except Exception as e:
-        print('Could not initialize settings:', e)
+        print('Settings: Could not initialize settings:', e)
         settingsinit = False
     return settingsinit

@@ -1,7 +1,8 @@
 
-from core.file import current as file
+
 
 def read():
+    from core.file import current as file
     offset = 0
 
     #Initial values

@@ -9,7 +9,9 @@ class Button:
             self.getsettings()
         if isinstance(label, int): # If label is a number get it from settings language. If it isnt, its a string from popup and settings is corrupt/None
             label = settings.language[label]
-        self.button = ctk.CTkButton(parent, text=label, command=function,  
+        self.name = label
+        print(f'Button: Creating {self.name}')
+        self.button = ctk.CTkButton(parent, text=label, command=function,
         fg_color=self.background, 
         text_color=self.text, 
         border_color=self.border,
@@ -20,15 +22,18 @@ class Button:
         width=100)
         if state == False:
             self.button.configure(state='disabled')
+            print(f"Button: disabling {self.name}")
 
     def changestate(self, state:bool = True):
         if state == False: # disables button if supplied bool is false
+            print(f"Button: disabling button {self.name}")
             self.button.configure(state='disable')
             return
-        print("enabling button")
+        print(f"Button: enabling button {self.name}")
         self.button.configure(state='normal') # enables button if supplied bool is true
 
     def remove(self):
+        print(f'Button: destroying {self.name}')
         self.button.destroy()
 
     def backupsettings(self):
@@ -49,7 +54,9 @@ class Button:
 
 class Inputbox:
     def __init__(self, parent, row, name, value, backgroundcolor):
-        print(name, value)
+        print(f'InputBox: Creating {name} with value: {value}')
+
+        self.name = name
         
         self.main = ctk.CTkFrame(parent,
         fg_color=backgroundcolor, # creates the frame
@@ -61,17 +68,29 @@ class Inputbox:
         self.main.columnconfigure(1, weight=1)
         self.main.columnconfigure(2, weight=0)
 
-        self.name = ctk.CTkLabel(self.main, text_color=settings.text, fg_color=backgroundcolor,
+        self.title = ctk.CTkLabel(self.main, text_color=settings.text, fg_color=backgroundcolor,
             text=name)
-        self.name.grid(column=0, row=0, sticky='W', padx=4, pady=4)
+        self.title.grid(column=0, row=0, sticky='W', padx=4, pady=1)
         
         self.value = ctk.StringVar()
         self.value.set(value)
         self.input = ctk.CTkEntry(self.main, textvariable=self.value, fg_color=backgroundcolor,
                                   text_color=settings.text,
                                   border_color=settings.border,
-                                  width=100)
-        self.input.grid(column=2, row=0, sticky='E', padx=4, pady=4)
+                                  width=100,
+                                  height=15)
+        self.input.grid(column=2, row=0, sticky='E', padx=4, pady=1)
+
+    def clear(self):
+        print(f'InputBox: Destroying {self.name}')
+        self.main.destroy()
+
+    def getvalue(self):
+        print(f'InputBox: Sending {self.name} new value: {self.input.get()}')
+        newval = self.input.get()
+        newval = newval.replace(',', '.')
+        return newval
+
 
             
 
