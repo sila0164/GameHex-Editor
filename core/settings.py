@@ -5,7 +5,7 @@ import json
 
 
 class Settings:
-    def __init__(self):
+    def __init__(self, force: bool = False):
         self.is_exe = getattr(sys, 'frozen', False)
         if self.is_exe == True:
             self.root = os.path.dirname(sys.executable) # I tilfælde af en exe
@@ -20,14 +20,16 @@ class Settings:
         self.settingsfile = os.path.join(self.root, 'Settings.json')
 
         # Loads Settings file if it exists
-        if os.path.exists(self.settingsfile):
+        if os.path.exists(self.settingsfile) and force == False:
             print('Settings: Importing settings from file')
             with open(self.settingsfile, "r", encoding='utf-8') as f:
                 self.settings = json.load(f)
+        else:
+            force = True
         
         # Creates a new if it doesn't
-        else:
-            print('Settings: No settings file, creating new with defaults')
+        if force == True:
+            print('Settings: Creating new with defaults')
             self.settings = {
             'text': ["#EEEEEE", "color"],
             'background': ["#222222", 'color'],
@@ -105,6 +107,17 @@ class Settings:
             return False
 
 settings = None
+
+def forcecreatesettings() -> bool:
+    global settings
+    print('Settings: Force-creating new settings.json')
+    try:
+        settings = Settings(force=True)
+        settingsinit = True
+    except Exception as e:
+        print('Settings: Could not force-create settings:', e)
+        settingsinit = False
+    return settingsinit
 
 def initsettings() -> bool:
     global settings

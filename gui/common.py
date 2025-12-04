@@ -27,7 +27,7 @@ class Button:
     def changestate(self, state:bool = True):
         if state == False: # disables button if supplied bool is false
             print(f"Button: disabling button {self.name}")
-            self.button.configure(state='disable')
+            self.button.configure(state='disabled')
             return
         print(f"Button: enabling button {self.name}")
         self.button.configure(state='normal') # enables button if supplied bool is true
@@ -78,8 +78,12 @@ class Inputbox:
                                   text_color=settings.text,
                                   border_color=settings.border,
                                   width=100,
-                                  height=15)
+                                  height=15,
+                                  )
         self.input.grid(column=2, row=0, sticky='E', padx=4, pady=1)
+        
+    def valueupdate(self, enablewrite):
+        self.value.trace_add('write', enablewrite)
 
     def clear(self):
         print(f'InputBox: Destroying {self.name}')

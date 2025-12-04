@@ -1,31 +1,36 @@
 import customtkinter as ctk
-from core.settings import settings
 from gui.common import Button
 
 popupdefault = {
     0: 'Close',
     1: 'ERROR: Could not read settings',
     2: 'Could not read or create "Settings.json".\n\nTry deleting it from the folder the .exe is in, if it already exists.',
-    3: "\n\nThe report button copies the log to the clipboard and opens the bugpage on nexusmods in your browser. Simply paste it into a report and tell me what you were doing.",
-    4: 'Report bug',
+    3: "",
+    4: "This shouldn't exist",
+    8: 'Could not read "Settings.json".\n\nIt is either corrupt, or something isnt in the correct syntax. Do you want to overwrite it and create a new one?',
+    9: 'Yes',
+    10: 'No',
 }
 
 class Popup:
     
-    def __init__(self, title, message, root=None, report: bool=False):
-        print(f"Creating popup")
-        if settings == None: # gets backup settings if settings doesnt exist
-            self.backupsettings()
+    def __init__(self, title, message, root=None, report: bool=False, backup:bool=False):
+        if backup == True: # gets backup settings 
+            self.backupsettings(message)
         else:
             self.getsettings(title, message)
         finalmessage = self.message
+        print(f'Popup: Creating {self.title}')
         if root == None: # creates itself as root if there is none
+            print('Popup: Running as main root')
             self.root = ctk.CTk()
         else: # goes toplevel of root if there is a window open.
+            print('Popup: Running as Toplevel')
             self.root = ctk.CTkToplevel(root)
         
         self.report = False
         if report == True: # adds the report bug text to the message if it is true
+            print('Popup: Report button enabled')
             self.report = True
             finalmessage = (f'{self.message}{self.dict[3]}')
         
@@ -56,17 +61,20 @@ class Popup:
         self.horseparator = ctk.CTkFrame(self.main, height=1, fg_color=self.border)
         self.horseparator.grid(row=1, column=0, columnspan=3, sticky='NEW')
     
-    def backupsettings(self):
+    def backupsettings(self, message):
+        print('Popup: Getting backup settings')
         self.darkaccent = '#333333'
         self.highlight = "#666666"
         self.background = "#222222"
         self.border = "#AAAAAA"
         self.text = "#EEEEEE"
         self.dict = popupdefault
-        self.message = popupdefault[2]
+        self.message = popupdefault[message]
         self.title = popupdefault[1]
     
     def getsettings(self, title, message):
+        print('Popup: Getting settings from core')
+        from core.settings import settings
         self.darkaccent = settings.darkaccent
         self.highlight = settings.highlight
         self.background = settings.background
@@ -76,16 +84,24 @@ class Popup:
         self.message = self.dict[message]
         self.title = self.dict[title]
 
-    def buttonsbool(self, truelabel: int, falselabel: int): 
+    def close(self):
+        if isinstance(self.root, ctk.CTk):
+            self.root.update_idletasks()
+        self.root.destroy()
+
+    def buttonsbool(self, truelabel: int, falselabel: int) -> bool: 
         # Creates button
         self.returnbool = False
         def true():
+            print('Popup: Player selected true')
             self.returnbool = True
-            self.root.destroy()
+            self.close()
         def false():
+            print('Popup: Player selected false')
             self.returnbool = False
-            self.root.destroy()
+            self.close()
         #Buttons
+        print(f'Popup: Creating buttonsbool: {self.dict[truelabel]} - {self.dict[falselabel]}')
         self.true = Button(self.buttonbox, label=self.dict[truelabel], function=true)
         self.false = Button(self.buttonbox, label=self.dict[falselabel], function=false)
         
@@ -94,11 +110,6 @@ class Popup:
         
         self.buttonbox.columnconfigure(1, weight=1)
         self.false.button.grid(column=1, row=0, padx=4, pady=4)
-        # report button
-        if self.report == True:
-            self.reportbtn = Button(self.buttonbox, label=self.dict[4], function=self.reportbutton)
-            self.buttonbox.columnconfigure(2, weight=1)
-            self.reportbtn.button.grid(column=2, row=0, padx=4, pady=4)  
         # Makes the window force the user to choose
         if isinstance(self.root, ctk.CTk):
             self.root.mainloop()
@@ -109,32 +120,16 @@ class Popup:
 
     def buttonsackknowledge(self, label: int):
         def ok():
-            self.root.destroy()
+            self.close()
         # true button
+        print(f'Popup: Creating buttonsackknowledge: {self.dict[label]}')
         self.ok = Button(self.buttonbox, label=self.dict[label], function=ok)
         # places button in specific row
         self.buttonbox.columnconfigure(0, weight=1)
-        self.ok.button.grid(column=0, row=0, padx=4, pady=4)
-        # report button
-        if self.report == True:
-            self.reportbtn = Button(self.buttonbox, label=self.dict[4], function=self.reportbutton)
-            self.buttonbox.columnconfigure(1, weight=1)
-            self.reportbtn.button.grid(column=1, row=0, padx=4, pady=4)  
+        self.ok.button.grid(column=0, row=0, padx=4, pady=4) 
         if isinstance(self.root, ctk.CTk):
             self.root.mainloop()
         else:
             self.root.grab_set()
             self.root.wait_window()
 
-    def reportbutton(self):
-        print("Reporting bug") 
-        import webbrowser
-        from core.file import current
-        if current !=None: # Adds print of current file if one is mounted
-            log = settings.getlog(current)
-        else: # else it just prints the current log
-            log = settings.getlog()
-        self.root.clipboard_clear()        
-        self.root.clipboard_append(log)  
-        self.root.update()   
-        webbrowser.open("https://www.nexusmods.com/ghostreconbreakpoint/mods/1585?tab=bugs")

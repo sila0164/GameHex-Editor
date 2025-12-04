@@ -75,7 +75,7 @@ class FileDisplay: # The text/message display at the top of the window
             self.filedisplay.after (timer, lambda: self.filedisplay.configure(text=delayedmessage))
 
 class StatDisplay: # The main data manipulation interface
-    def __init__(self, parent: ctk.CTkFrame, parentcolumn: int=2, parentrow: int=2):
+    def __init__(self, parent: ctk.CTkFrame, enablewrite, parentcolumn: int=2, parentrow: int=2):
         self.main = ctk.CTkScrollableFrame(parent,
         fg_color=settings.darkaccent,
         scrollbar_fg_color=settings.background,
@@ -84,6 +84,7 @@ class StatDisplay: # The main data manipulation interface
         self.main.columnconfigure(0, weight=1)
         self.main.columnconfigure(1, weight=0)
         self.rowcount = 0
+        self.enablewrite = enablewrite
 
     def update(self): # saves the dictionary to itself
         import core.file as file
@@ -96,6 +97,7 @@ class StatDisplay: # The main data manipulation interface
             if colorcalc % 2 == 0: # Makes the backgroundcolor change for every other entry
                 bgcolor = settings.darkaccent
             self.inputs[key] = Inputbox(self.main, self.rowcount, key, value, bgcolor)
+            self.inputs[key].valueupdate(self.enablewrite)
             self.rowcount += 1 # Counts the row up 1
             self.horseparator = ctk.CTkFrame(self.main, height=1, fg_color=settings.border)
             self.horseparator.grid(row=self.rowcount, column=0, columnspan=2, sticky='EW')
@@ -132,6 +134,8 @@ class StatDisplay: # The main data manipulation interface
         if convertfails > 0:
             return False
         return True
+    
+    
 
 
             

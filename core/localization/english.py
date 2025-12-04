@@ -7,7 +7,7 @@ english = {
     #Text:
     0: 'Close', # for closing the program or window
     1: 'ERROR: Could not read settings',
-    2: 'Could not read or create settings.json. Try deleting it from the folder the .exe is in, if it already exists.',
+    2: 'Could not read or create settings.json, it could be corrupt or you have made an invalid change. Should a new one be created?',
     3: "\n\nThe report button copies the log to the clipboard and opens the bugpage on nexusmods in your browser. Simply paste it into a report and tell me what you were doing.",
     4: 'Report bug',
     5: "Open", # A file
@@ -28,5 +28,8 @@ english = {
     20: 'File written!',
     21: 'Something is not a valid number, please check your values.\n\nNothing has been written to file.',
     22: 'Invalid Value',
-    30: ["Warning", "Any changes to the current file that has not been written, will be lost."],
+    23: "Warning", 
+    24: "Any changes to the current file that has not been written, will be lost.",
+    25: 'Continue',
+    26: 'Cancel',
 }
