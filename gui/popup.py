@@ -1,5 +1,6 @@
 import customtkinter as ctk
 from gui.common import Button
+import core.settings
 
 popupdefault = {
     0: 'Close',
@@ -74,13 +75,12 @@ class Popup:
     
     def getsettings(self, title, message):
         print('Popup: Getting settings from core')
-        from core.settings import settings
-        self.darkaccent = settings.darkaccent
-        self.highlight = settings.highlight
-        self.background = settings.background
-        self.border = settings.border
-        self.text = settings.text
-        self.dict = settings.language
+        self.darkaccent = core.settings.current.darkaccent
+        self.highlight = core.settings.current.highlight
+        self.background = core.settings.current.background
+        self.border = core.settings.current.border
+        self.text = core.settings.current.text
+        self.dict = core.settings.current.language
         self.message = self.dict[message]
         self.title = self.dict[title]
 

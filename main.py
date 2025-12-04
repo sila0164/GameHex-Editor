@@ -1,10 +1,11 @@
 from core.settings import initsettings, forcecreatesettings
 from tkinter import filedialog
-import time
+from gui import * 
+import core.file as file
+from core.file import File
 
 class Main:
     def __init__(self):
-        from core.settings import settings
         self.firstopen = 0
         self.filehasbeenedited = False
         # creates main window
@@ -122,16 +123,10 @@ class Main:
 if __name__ == '__main__': 
     settingsinit = initsettings()
     if settingsinit == False: # stops the program if settings couldnt be set
-        from gui.popup import Popup
         popup = Popup(1, 8, backup=True) # Creates a popup telling the user settings are broke
         createnewsettings = popup.buttonsbool(9, 10) # asks whether or not a new settings file should be created
         if createnewsettings == True:
             settingsinit = forcecreatesettings()
-
     # if settings are read properly, imports everything and starts Main(controller)
     if settingsinit == True:
-        from gui import * 
-        import core.file as file
-        from core.settings import settings
-        from core import *
         Main()

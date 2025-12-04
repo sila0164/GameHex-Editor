@@ -1,14 +1,14 @@
-from core.settings import settings
+import core.settings
 import customtkinter as ctk
 
 class Button:
     def __init__(self, parent, label, function, state:bool = True):
-        if settings == None: # gets backup settings if settings doesnt exist
+        if core.settings.current == None: # gets backup settings if settings doesnt exist
             self.backupsettings()
         else:
             self.getsettings()
         if isinstance(label, int): # If label is a number get it from settings language. If it isnt, its a string from popup and settings is corrupt/None
-            label = settings.language[label]
+            label = core.settings.current.language[label]
         self.name = label
         print(f'Button: Creating {self.name}')
         self.button = ctk.CTkButton(parent, text=label, command=function,
@@ -45,12 +45,12 @@ class Button:
         self.accent = '#444444'
 
     def getsettings(self):
-        self.darkaccent = settings.darkaccent
-        self.highlight = settings.highlight
-        self.accent = settings.accent
-        self.background = settings.background
-        self.border = settings.border
-        self.text = settings.text
+        self.darkaccent = core.settings.current.darkaccent
+        self.highlight = core.settings.current.highlight
+        self.accent = core.settings.current.accent
+        self.background = core.settings.current.background
+        self.border = core.settings.current.border
+        self.text = core.settings.current.text
 
 class Inputbox:
     def __init__(self, parent, row, name, value, backgroundcolor):
@@ -68,15 +68,15 @@ class Inputbox:
         self.main.columnconfigure(1, weight=1)
         self.main.columnconfigure(2, weight=0)
 
-        self.title = ctk.CTkLabel(self.main, text_color=settings.text, fg_color=backgroundcolor,
+        self.title = ctk.CTkLabel(self.main, text_color=core.settings.current.text, fg_color=backgroundcolor,
             text=name)
         self.title.grid(column=0, row=0, sticky='W', padx=4, pady=1)
         
         self.value = ctk.StringVar()
         self.value.set(value)
         self.input = ctk.CTkEntry(self.main, textvariable=self.value, fg_color=backgroundcolor,
-                                  text_color=settings.text,
-                                  border_color=settings.border,
+                                  text_color=core.settings.current.text,
+                                  border_color=core.settings.current.border,
                                   width=100,
                                   height=15,
                                   )

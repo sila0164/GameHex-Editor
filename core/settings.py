@@ -106,13 +106,13 @@ class Settings:
             print(f"Settings: Could not change: {name} to: {value} as it was not a: {self.settings[name][1]}")
             return False
 
-settings = None
+current = None
 
 def forcecreatesettings() -> bool:
-    global settings
+    global current
     print('Settings: Force-creating new settings.json')
     try:
-        settings = Settings(force=True)
+        current = Settings(force=True)
         settingsinit = True
     except Exception as e:
         print('Settings: Could not force-create settings:', e)
@@ -120,10 +120,10 @@ def forcecreatesettings() -> bool:
     return settingsinit
 
 def initsettings() -> bool:
-    global settings
+    global current
     print('Settings: Initializing settings')
     try:
-        settings = Settings()
+        current = Settings()
         settingsinit = True
         print('Settings: Settings Initialized')
     except Exception as e:

@@ -1,5 +1,5 @@
 import customtkinter as ctk
-from core.settings import settings
+import core.settings
 from gui.common import Inputbox
 
 class MainWindow:# The main window that contains everything
@@ -9,9 +9,9 @@ class MainWindow:# The main window that contains everything
         # Creates itself
         print('MainWindow: Creating Main Window')
         self.root = ctk.CTk()
-        self.root.title(settings.language[12])
+        self.root.title(core.settings.current.language[12])
         self.root.geometry("450x600")
-        self.main = ctk.CTkFrame(self.root, bg_color=settings.background)
+        self.main = ctk.CTkFrame(self.root, bg_color=core.settings.current.background)
         self.root.grid_rowconfigure(0, weight=1)
         self.root.grid_columnconfigure(0, weight=1)
         self.main.grid(row=0, column=0, sticky='NSEW')
@@ -23,9 +23,9 @@ class MainWindow:# The main window that contains everything
         self.main.rowconfigure(2, weight=1)
 
         # Creates the white lines that seperate items on screen
-        self.horseparator = ctk.CTkFrame(self.main, height=1, fg_color=settings.border)
+        self.horseparator = ctk.CTkFrame(self.main, height=1, fg_color=core.settings.current.border)
         self.horseparator.grid(row=1, column=0, columnspan=3, sticky='EW')
-        self.verseparator = ctk.CTkFrame(self.main, width=1, fg_color=settings.border)
+        self.verseparator = ctk.CTkFrame(self.main, width=1, fg_color=core.settings.current.border)
         self.verseparator.grid(row=2, column=1, sticky='SN')
 
     def exit(self):
@@ -33,7 +33,7 @@ class MainWindow:# The main window that contains everything
 
 class ButtonBox: # The box on the left side of the window containing the buttons
     def __init__(self, parent, parentcolumn: int=0, parentrow: int=2):
-        self.main = ctk.CTkFrame(parent, fg_color=settings.background,
+        self.main = ctk.CTkFrame(parent, fg_color=core.settings.current.background,
         corner_radius=0)
         self.main.grid(row=parentrow, column=parentcolumn, sticky='NSEW')
         for row in range(11):
@@ -54,31 +54,31 @@ class ButtonBox: # The box on the left side of the window containing the buttons
 class FileDisplay: # The text/message display at the top of the window
         
     def __init__(self, message, parent: ctk.CTkFrame, parentcolumn: int=0, parentrow: int=0, columnspan: int=1000):
-        self.filedisplayframe = ctk.CTkFrame(parent, fg_color=settings.background,
+        self.filedisplayframe = ctk.CTkFrame(parent, fg_color=core.settings.current.background,
         corner_radius=0,
         )
         if isinstance(message, int):
-            message = settings.language[message]
+            message = core.settings.current.language[message]
         self.filedisplayframe.grid(column=parentcolumn, columnspan=columnspan, row=parentrow, sticky='WNSE')
-        self.filedisplay = ctk.CTkLabel(self.filedisplayframe, text=message, bg_color=settings.background,
-        text_color=settings.text)
+        self.filedisplay = ctk.CTkLabel(self.filedisplayframe, text=message, bg_color=core.settings.current.background,
+        text_color=core.settings.current.text)
         self.filedisplay.grid(column=0, row=0, sticky='W', padx=4)
     
     def changetext(self, message, delayedmessage = None, timer: int = 3500):
         if isinstance(message, int):
-            message = settings.language[message]
+            message = core.settings.current.language[message]
         self.filedisplay.configure(text=message)
         self.filedisplay.update_idletasks()
         if delayedmessage != None:
             if isinstance(delayedmessage, int):
-                delayedmessage = settings.language[delayedmessage]
+                delayedmessage = core.settings.current.language[delayedmessage]
             self.filedisplay.after (timer, lambda: self.filedisplay.configure(text=delayedmessage))
 
 class StatDisplay: # The main data manipulation interface
     def __init__(self, parent: ctk.CTkFrame, enablewrite, parentcolumn: int=2, parentrow: int=2):
         self.main = ctk.CTkScrollableFrame(parent,
-        fg_color=settings.darkaccent,
-        scrollbar_fg_color=settings.background,
+        fg_color=core.settings.current.darkaccent,
+        scrollbar_fg_color=core.settings.current.background,
         corner_radius=0)
         self.main.grid(row=parentrow, column=parentcolumn, sticky='NSEW')
         self.main.columnconfigure(0, weight=1)
@@ -92,14 +92,14 @@ class StatDisplay: # The main data manipulation interface
         for index, key in enumerate(file.current.stat): # creates an inputbox for each stat in the dictionary
             self.main.rowconfigure(self.rowcount, weight=0) #Configures the row
             value = file.current.stat[key]['value']
-            bgcolor = settings.accent
+            bgcolor = core.settings.current.accent
             colorcalc = self.rowcount / 2
             if colorcalc % 2 == 0: # Makes the backgroundcolor change for every other entry
-                bgcolor = settings.darkaccent
+                bgcolor = core.settings.current.darkaccent
             self.inputs[key] = Inputbox(self.main, self.rowcount, key, value, bgcolor)
             self.inputs[key].valueupdate(self.enablewrite)
             self.rowcount += 1 # Counts the row up 1
-            self.horseparator = ctk.CTkFrame(self.main, height=1, fg_color=settings.border)
+            self.horseparator = ctk.CTkFrame(self.main, height=1, fg_color=core.settings.current.border)
             self.horseparator.grid(row=self.rowcount, column=0, columnspan=2, sticky='EW')
             self.rowcount += 1
     

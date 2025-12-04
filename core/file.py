@@ -1,6 +1,5 @@
 import struct
 from db.weapondb import weapondb
-from core.settings import settings
 
 #Should never import from anything other than db and settings
 
