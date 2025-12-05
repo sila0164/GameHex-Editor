@@ -1,6 +1,7 @@
 import customtkinter as ctk
 import core.settings
-from gui.common import Inputbox
+import core.file as file
+import gui.common as gui
 
 class MainWindow:# The main window that contains everything
 
@@ -11,7 +12,7 @@ class MainWindow:# The main window that contains everything
         self.root = ctk.CTk()
         self.root.title(core.settings.current.language[12])
         self.root.geometry("450x600")
-        self.main = ctk.CTkFrame(self.root, bg_color=core.settings.current.background)
+        self.main = ctk.CTkFrame(self.root, fg_color=core.settings.current.background)
         self.root.grid_rowconfigure(0, weight=1)
         self.root.grid_columnconfigure(0, weight=1)
         self.main.grid(row=0, column=0, sticky='NSEW')
@@ -23,10 +24,8 @@ class MainWindow:# The main window that contains everything
         self.main.rowconfigure(2, weight=1)
 
         # Creates the white lines that seperate items on screen
-        self.horseparator = ctk.CTkFrame(self.main, height=1, fg_color=core.settings.current.border)
-        self.horseparator.grid(row=1, column=0, columnspan=3, sticky='EW')
-        self.verseparator = ctk.CTkFrame(self.main, width=1, fg_color=core.settings.current.border)
-        self.verseparator.grid(row=2, column=1, sticky='SN')
+        self.horsep = gui.Separator(self.main, 1, 0, 3, 'horizontal')
+        self.versep = gui.Separator(self.main, 1, 1, 2, 'vertical')
 
     def exit(self):
         self.root.destroy()
@@ -34,22 +33,21 @@ class MainWindow:# The main window that contains everything
 class ButtonBox: # The box on the left side of the window containing the buttons
     def __init__(self, parent, parentcolumn: int=0, parentrow: int=2):
         self.main = ctk.CTkFrame(parent, fg_color=core.settings.current.background,
-        corner_radius=0)
+        corner_radius=0, border_width=0)
         self.main.grid(row=parentrow, column=parentcolumn, sticky='NSEW')
-        for row in range(11):
-            if row == 8: # Makes the row before last fill any empty space, to create a neater interface
-                self.main.rowconfigure(8, weight=100)
-            else:
-                self.main.rowconfigure(row, weight=1)
-        self.buttons = {} # a list of buttons
         self.buttoncount = 0 # a counter of buttons, to automatically create buttons without needing to get row number
 
-    def placebutton(self, button, row=None): 
-        if row == None: # automatically sets row to next row if no row has been supplied
-            row = self.buttoncount
+    def placebutton(self, button, lastbutton:bool=False): 
+        if lastbutton == True:
+            self.main.rowconfigure(self.buttoncount, weight=100)
             self.buttoncount += 1
-        
-        button.grid(column=0, row=row, padx=4, pady=4) # places button in specific row
+        self.main.rowconfigure(self.buttoncount, weight=0)
+        button.grid(column=0, row=self.buttoncount, padx=4, pady=4)
+        self.buttoncount += 1
+    
+    def space(self, space:int=15):
+        self.main.rowconfigure(self.buttoncount, weight=0, minsize=space)
+        self.buttoncount += 1
 
 class FileDisplay: # The text/message display at the top of the window
         
@@ -75,7 +73,7 @@ class FileDisplay: # The text/message display at the top of the window
             self.filedisplay.after (timer, lambda: self.filedisplay.configure(text=delayedmessage))
 
 class StatDisplay: # The main data manipulation interface
-    def __init__(self, parent: ctk.CTkFrame, enablewrite, parentcolumn: int=2, parentrow: int=2):
+    def __init__(self, parent: ctk.CTkFrame, parentcolumn: int=2, parentrow: int=2):
         self.main = ctk.CTkScrollableFrame(parent,
         fg_color=core.settings.current.darkaccent,
         scrollbar_fg_color=core.settings.current.background,
@@ -83,11 +81,13 @@ class StatDisplay: # The main data manipulation interface
         self.main.grid(row=parentrow, column=parentcolumn, sticky='NSEW')
         self.main.columnconfigure(0, weight=1)
         self.main.columnconfigure(1, weight=0)
+    
+    def newfile(self, enablewrite): # saves the dictionary to itself
         self.rowcount = 0
-        self.enablewrite = enablewrite
-
-    def update(self): # saves the dictionary to itself
-        import core.file as file
+        self.revert = {}
+        self.originalvalue= {}
+        self.lastvalue = {}
+        self.revertcount = 0
         self.inputs = {} # keeps track of the inputboxes
         for index, key in enumerate(file.current.stat): # creates an inputbox for each stat in the dictionary
             self.main.rowconfigure(self.rowcount, weight=0) #Configures the row
@@ -96,13 +96,34 @@ class StatDisplay: # The main data manipulation interface
             colorcalc = self.rowcount / 2
             if colorcalc % 2 == 0: # Makes the backgroundcolor change for every other entry
                 bgcolor = core.settings.current.darkaccent
-            self.inputs[key] = Inputbox(self.main, self.rowcount, key, value, bgcolor)
-            self.inputs[key].valueupdate(self.enablewrite)
+            self.inputs[key] = gui.Inputbox(self.main, self.rowcount, key, value, bgcolor)
+            self.inputs[key].valuegetupdates(enablewrite)
+            self.originalvalue[key] = value
+            self.lastvalue[key] = value
             self.rowcount += 1 # Counts the row up 1
-            self.horseparator = ctk.CTkFrame(self.main, height=1, fg_color=core.settings.current.border)
-            self.horseparator.grid(row=self.rowcount, column=0, columnspan=2, sticky='EW')
+            self.horsep = gui.Separator(self.main, self.rowcount, 0, 2, 'horizontal')
             self.rowcount += 1
-    
+
+    def updaterevert(self, statname):
+        key = self.stringvar[statname]
+        self.revert[str(self.revertcount)] = {}
+        self.revert[str(self.revertcount)]['name'] = key
+        self.revert[str(self.revertcount)]['value'] = self.lastvalue[key]
+        self.lastvalue[key] = self.inputs[key].getvalue()
+        self.revertcount += 1
+
+    def revertlast(self):
+        inputname = self.revert[str(self.revertcount)]['name']
+        inputoldvalue = self.revert[str(self.revertcount)]['value']
+        self.inputs[inputname].value.set(inputoldvalue)
+        del self.revert[str(self.revertcount)]
+        self.revertcount -= 1
+
+    def revertoriginal(self):
+        for index, input in enumerate(self.inputs):
+            self.updaterevert(input)
+            self.inputs[input].value.set(self.originalvalue[input]) 
+
     def clear(self):
         for child in self.main.winfo_children():
             child.destroy()

@@ -6,43 +6,52 @@ from core.file import File
 
 class Main:
     def __init__(self):
-        self.firstopen = 0
-        self.filehasbeenedited = False
         # creates main window
         self.window = MainWindow()
         self.root = self.window.root
         self.buttonbox = ButtonBox(self.window.main)
         self.filedisplay = FileDisplay(13, self.window.main)
-        self.statdisplay = StatDisplay(self.window.main, self.enablewrite)
-        
-        self.open = Button(self.buttonbox.main, 5, self.openfile) # opens filedialog and reads the given file
+        self.statdisplay = StatDisplay(self.window.main)
+        #Buttons for buttonbox
+        self.open = Button(self.buttonbox.main, 5, self.openfile)
         self.buttonbox.placebutton(self.open.button)
-        self.revert = Button(self.buttonbox.main, 6, self.revertstats, state=False) # reverts to last state before last write
-        self.buttonbox.placebutton(self.revert.button)
-        self.revertoriginal = Button(self.buttonbox.main, 16, self.revertoriginalstats) #state=False) # Is temporarily a print button for testing
-        self.buttonbox.placebutton(self.revertoriginal.button)
+        self.buttonbox.space()
         self.write = Button(self.buttonbox.main, 18, self.writetofile, state=False)
         self.buttonbox.placebutton(self.write.button)
+        self.buttonbox.space()
+        self.revert = Button(self.buttonbox.main, 6, self.revertstats, state=False)
+        self.buttonbox.placebutton(self.revert.button)
+        self.revertoriginal = Button(self.buttonbox.main, 16, self.revertoriginalstats, state=False)
+        self.buttonbox.placebutton(self.revertoriginal.button)
         self.exit = Button(self.buttonbox.main, 0, self.exitprogram)
-        self.buttonbox.placebutton(self.exit.button, row=10)
+        self.buttonbox.placebutton(self.exit.button, lastbutton=True)
+
+        self.firstopen = True
+        self.newfile = False
+        self.filehasbeenedited = False 
 
         self.root.mainloop()
 
-    def enablewrite(self, varname, index, mode):
-        if self.write.button._state == 'disabled':
-            print(f'Main: Enabling writebutton: {varname} was changed')
+    def updatebuttons(self, varname, index, mode):
+        print(f'Main: Enabling writebutton: {varname} was changed')
+        if self.newfile == False:
             self.filehasbeenedited = True
             self.write.changestate()
-
+            self.statdisplay.updaterevert(varname)
+            self.revertoriginal.changestate()
+            self.revert.changestate()
+        else:
+            self.write.changestate(False)
+            self.revertoriginal.changestate(False)
+            self.revert.changestate(False)
+        self.newfile = False
 
     def openfile(self):
         print('Main: Opening File')
         tempfilepath = None
-        savefilereminder = False
+        savefilereminder = True
         if self.filehasbeenedited == True:
-            savefilereminder = self.filealreadyopencheck()
-        else:
-            savefilereminder = True
+            savefilereminder = self.filealreadyopencheck() # prompts the user if they want to save first. Gets False if they cancel
 
         if savefilereminder == True:
             tempfilepath = filedialog.askopenfilename(title="Open a File")
@@ -73,13 +82,18 @@ class Main:
             popup.buttonsackknowledge(15)
             self.filedisplay.changetext(13)
         if continueload == True:
-            self.firstopen += 1
+            self.firstopen = False
             tempfile.mount() # Mounts the file as core.file.current
             #searchpattern = settings.searchpatterns[file.current.extension] # figures out what searchpattern to use
             #searchpattern() # runs the searchpattern
             from Suites.GhostReconBreakpoint.GR_WeaponDBEntry import read as readweaponentry
             readweaponentry()
-            self.statdisplayinit()
+            if self.firstopen == False:
+                print('Main: Clearing statdisplay')
+                self.statdisplay.clear()
+            self.statdisplay.newfile(self.updatebuttons)
+            self.filedisplay.changetext(file.current.fullname)
+            self.newfile = True
 
     def writetofile(self):
         print('Main: Writing to file')
@@ -93,27 +107,24 @@ class Main:
             popup = Popup(22, 21, self.root)
             popup.buttonsackknowledge(15)
             self.filedisplay.changetext(file.current.fullname)
-
-    def statdisplayinit(self):
-        if self.firstopen > 1:
-            print('Main: Clearing statdisplay')
-            self.statdisplay.clear()
-        self.statdisplay.update()
-        self.filedisplay.changetext(file.current.fullname)
-
+        
     def revertstats(self):
         if file.current != None and self.revert:
             print('Main: Reverting settings')
-            file.current.revert()
             self.revert.changestate(False)
+            self.statdisplay.revertlast()
+            self.revertactive = False
         else:
             print('Main: No file mounted, could not revert.')
+        if self.statdisplay.revertcount == 0:
+            self.revert.changestate(False)
     
     def revertoriginalstats(self):
-        if file.current != None:
-            print(file.current)
+        if file.current != None and self.revertoriginal:
+            print('Main: Reverting settings to original')
+            self.statdisplay.revertoriginal()
         else:
-            print('Main: No file is loaded')
+            print('Main: No file mounted, could not revert to original.')
 
     def exitprogram(self):
         print('Main: Exiting program')

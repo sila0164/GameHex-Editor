@@ -96,23 +96,9 @@ class File:
         return 0
 
     def changevalue(self, name:str, value): # changes current value for a stat which will be written if wanted
-        if 'original' not in self.stat[name]: # saves the original value if it hasnt been changed before
-            self.stat[name]['original'] = self.stat[name]['value'] 
-        self.stat[name]['revert'] = self.stat[name]['value'] # creates a revert for the stat
         self.stat[name]['value'] = value # updates the value
         self.stat[name]['write'] = 1
-        print(f'File: New value set: {name} - {value} - Old Value: {self.stat[name]['revert']}')
-
-    def revert(self):
-        for index, stat in enumerate(self.stat): # goes through all stats
-            if 'revert' in stat: # only reverts stats with a revert value
-                stat['value'] = stat['revert']
-    
-    def revertoriginal(self):
-        for index, stat in enumerate(self.stat): # goes through all stats
-            if 'original' in stat: # only reverts stats with a original value
-                stat['revert'] = stat['value'] # updates revert
-                stat['value'] = stat['original'] # sets the value to original
+        print(f'File: New value set: {name} - {value}')
 
     def write(self):
         print('File: Writing to file')

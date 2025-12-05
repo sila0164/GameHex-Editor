@@ -1,5 +1,6 @@
 import core.settings
 import customtkinter as ctk
+import tkinter as tk
 
 class Button:
     def __init__(self, parent, label, function, state:bool = True):
@@ -15,7 +16,7 @@ class Button:
         fg_color=self.background, 
         text_color=self.text, 
         border_color=self.border,
-        border_width=1,
+        border_width=2,
         corner_radius=5,
         hover_color=self.highlight,
         text_color_disabled=self.darkaccent,
@@ -72,7 +73,7 @@ class Inputbox:
             text=name)
         self.title.grid(column=0, row=0, sticky='W', padx=4, pady=1)
         
-        self.value = ctk.StringVar()
+        self.value = tk.StringVar()
         self.value.set(value)
         self.input = ctk.CTkEntry(self.main, textvariable=self.value, fg_color=backgroundcolor,
                                   text_color=core.settings.current.text,
@@ -82,8 +83,8 @@ class Inputbox:
                                   )
         self.input.grid(column=2, row=0, sticky='E', padx=4, pady=1)
         
-    def valueupdate(self, enablewrite):
-        self.value.trace_add('write', enablewrite)
+    def valuegetupdates(self, enablewrite):
+        self.value.trace_add('write', lambda: enablewrite(self.name))
 
     def clear(self):
         print(f'InputBox: Destroying {self.name}')
@@ -95,7 +96,14 @@ class Inputbox:
         newval = newval.replace(',', '.')
         return newval
 
-
+class Separator:
+    def __init__(self, parent, row:int, column:int, span:int, orientation:str):
+        if orientation == 'horizontal':
+            self.main = ctk.CTkFrame(parent, height=2, fg_color=core.settings.current.border)
+            self.main.grid(row=row, column=column, columnspan=span, sticky='EW')
+        elif orientation == 'vertical':
+            self.main = ctk.CTkFrame(parent, width=2, fg_color=core.settings.current.border)
+            self.main.grid(row=row, column=column, rowspan=span, sticky='NS')
             
 
 
