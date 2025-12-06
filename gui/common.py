@@ -1,17 +1,18 @@
-import core.settings
+import core.settings as cs
+import core.file as file
 import customtkinter as ctk
 import tkinter as tk
 
 class Button:
     def __init__(self, parent, label, function, state:bool = True):
-        if core.settings.current == None: # gets backup settings if settings doesnt exist
+        if cs.current == None: # gets backup settings if settings doesnt exist
             self.backupsettings()
         else:
             self.getsettings()
         if isinstance(label, int): # If label is a number get it from settings language. If it isnt, its a string from popup and settings is corrupt/None
-            label = core.settings.current.language[label]
+            label = cs.current.language[label]
         self.name = label
-        print(f'Button: Creating {self.name}')
+        cs.debug(f'Button: Creating "{self.name}" with state: {state}')
         self.button = ctk.CTkButton(parent, text=label, command=function,
         fg_color=self.background, 
         text_color=self.text, 
@@ -23,18 +24,18 @@ class Button:
         width=100)
         if state == False:
             self.button.configure(state='disabled')
-            print(f"Button: disabling {self.name}")
 
     def changestate(self, state:bool = True):
-        if state == False: # disables button if supplied bool is false
-            print(f"Button: disabling button {self.name}")
+        currentstate = self.button._state # Mostly to avoid spam in terminal. Also stops any undesired behaviour in ui
+        if state == False and currentstate == 'normal': # disables button if supplied bool is false
+            cs.debug(f"Button: disabling button {self.name}")
             self.button.configure(state='disabled')
-            return
-        print(f"Button: enabling button {self.name}")
-        self.button.configure(state='normal') # enables button if supplied bool is true
+        if state == True and currentstate == 'disabled':
+            cs.debug(f"Button: enabling button {self.name}")
+            self.button.configure(state='normal') # enables button if supplied bool is true
 
-    def remove(self):
-        print(f'Button: destroying {self.name}')
+    def clear(self):
+        cs.debug(f'Button: destroying "{self.name}"')
         self.button.destroy()
 
     def backupsettings(self):
@@ -46,16 +47,16 @@ class Button:
         self.accent = '#444444'
 
     def getsettings(self):
-        self.darkaccent = core.settings.current.darkaccent
-        self.highlight = core.settings.current.highlight
-        self.accent = core.settings.current.accent
-        self.background = core.settings.current.background
-        self.border = core.settings.current.border
-        self.text = core.settings.current.text
+        self.darkaccent = cs.current.darkaccent
+        self.highlight = cs.current.highlight
+        self.accent = cs.current.accent
+        self.background = cs.current.background
+        self.border = cs.current.border
+        self.text = cs.current.text
 
 class Inputbox:
     def __init__(self, parent, row, name, value, backgroundcolor):
-        print(f'InputBox: Creating {name} with value: {value}')
+        cs.debug(f'InputBox: Creating "{name}" with value: {value}')
 
         self.name = name
         
@@ -69,40 +70,70 @@ class Inputbox:
         self.main.columnconfigure(1, weight=1)
         self.main.columnconfigure(2, weight=0)
 
-        self.title = ctk.CTkLabel(self.main, text_color=core.settings.current.text, fg_color=backgroundcolor,
+        self.title = ctk.CTkLabel(self.main, text_color=cs.current.text, fg_color=backgroundcolor,
             text=name)
         self.title.grid(column=0, row=0, sticky='W', padx=4, pady=1)
         
-        self.value = tk.StringVar()
-        self.value.set(value)
-        self.input = ctk.CTkEntry(self.main, textvariable=self.value, fg_color=backgroundcolor,
-                                  text_color=core.settings.current.text,
-                                  border_color=core.settings.current.border,
+        self.value = tk.StringVar(name=self.name, value=value)
+
+        root = parent.winfo_toplevel()
+        checknumber = root.register(self.validvaluecheck)
+
+        self.input = ctk.CTkEntry(self.main, textvariable=self.value, 
+                                  validate = 'key',
+                                  validatecommand=(checknumber, '%P'),
+                                  fg_color=backgroundcolor,
+                                  text_color=cs.current.text,
+                                  border_color=cs.current.border,
                                   width=100,
                                   height=15,
                                   )
         self.input.grid(column=2, row=0, sticky='E', padx=4, pady=1)
         
     def valuegetupdates(self, enablewrite):
-        self.value.trace_add('write', lambda: enablewrite(self.name))
+        self.trace = self.value.trace_add('write', enablewrite)
+
+    def toggle(self):
+        if self.input._state == 'normal':
+            self.input.configure(state='disabled')
+        else:
+            self.input.configure(state='normal')
 
     def clear(self):
-        print(f'InputBox: Destroying {self.name}')
+        cs.debug(f'InputBox: Destroying {self.name}')
+        self.value.trace_remove('write', self.trace)
         self.main.destroy()
 
     def getvalue(self):
-        print(f'InputBox: Sending {self.name} new value: {self.input.get()}')
         newval = self.input.get()
-        newval = newval.replace(',', '.')
+        if newval == '':
+            return 0
+        if file.current.stat[self.name]['type'] == 'float':
+            newval = float(newval)
+        else:
+            newval = int(newval)
+        cs.debug(f'InputBox: Returning {newval}')
         return newval
+
+    def validvaluecheck(self, typedvalue):
+        if typedvalue == "":
+            return True
+        try:
+            if file.current.stat[self.name]['type'] == 'float':
+                float(typedvalue)
+            else:
+                int(typedvalue)
+            return True
+        except ValueError:
+            return False
 
 class Separator:
     def __init__(self, parent, row:int, column:int, span:int, orientation:str):
         if orientation == 'horizontal':
-            self.main = ctk.CTkFrame(parent, height=2, fg_color=core.settings.current.border)
+            self.main = ctk.CTkFrame(parent, height=2, fg_color=cs.current.border)
             self.main.grid(row=row, column=column, columnspan=span, sticky='EW')
         elif orientation == 'vertical':
-            self.main = ctk.CTkFrame(parent, width=2, fg_color=core.settings.current.border)
+            self.main = ctk.CTkFrame(parent, width=2, fg_color=cs.current.border)
             self.main.grid(row=row, column=column, rowspan=span, sticky='NS')
             
 

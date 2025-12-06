@@ -3,6 +3,8 @@ import os
 import sys
 import json
 
+#Only import localization. Is freely imported anywhere else
+
 
 class Settings:
     def __init__(self, force: bool = False):
@@ -40,6 +42,7 @@ class Settings:
             'firstlaunch': [True, 'bool'],
             'language': ['english', 'language'],
             'wantbackups': [False, 'bool'], 
+            'debug': [False, 'bool'],
             }
             with open(self.settingsfile, "w", encoding='utf-8') as f:
                 json.dump(self.settings, f, indent=4)
@@ -55,6 +58,7 @@ class Settings:
         self.firstlaunch: bool = self.settings['firstlaunch'][0]
         self.wantbackups: bool = self.settings['wantbackups'][0]
         self.openfile: bool = False
+        self.debug: bool = self.settings['debug'][0]
 
         # gets suites from files
         #self.getsuites()
@@ -107,6 +111,11 @@ class Settings:
             return False
 
 current = None
+
+def debug(text):
+    global current
+    if current != None and current.debug == True:
+        print(f'DEBUG: {text}')
 
 def forcecreatesettings() -> bool:
     global current

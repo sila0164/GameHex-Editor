@@ -34,5 +34,9 @@
     "wantbackups": [
         false,
         "bool"
+    ],
+    "debug": [
+        true,
+        "bool"
     ]
 }

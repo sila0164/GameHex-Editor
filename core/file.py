@@ -1,5 +1,6 @@
 import struct
 from db.weapondb import weapondb
+import core.settings as cs
 
 #Should never import from anything other than db and settings
 
@@ -21,6 +22,7 @@ class File:
         self.name, tempextension = os.path.splitext(self.fullname)
         self.extension = tempextension.lstrip('.') 
         self.stat = {} # a dictionary of all added stats for each file
+        self.hasbeenwritten = False
 
     def __repr__(self): #all data contained in the class
         return f'Name: {self.name} \nId: {self.id}\nLength: {self.maxoffset}\n\nStats:\n{self.stat}\n\nFull bytes:\n{self.hex}'
@@ -31,17 +33,17 @@ class File:
             for index, name in enumerate(weapondb): # checks for confirmed support
                 id = weapondb[name]
                 if self.id == id:
-                    print (f'File: Confirmed ID Found: {name} - {id}')
+                    cs.debug(f'File: Confirmed ID Found: {name} - {id}')
                     return 'confirmed'
-            print ('File: Supported fileformat found')
+            cs.debug('File: Supported fileformat found')
             return 'unknown' # returns that it is a known fileformat, but it isnt confirmed to be working
-        print ('File: Unsupported file')
+        cs.debug('File: Unsupported file')
         return 'unsupported' # returns the file is unsupported
     
     def mount(self):
         global current
         current = self
-        print(f'File: {self.name} mounted')
+        cs.debug(f'File: {self.name} mounted')
 
     def readtype(self, typename: str, offset: int):
         if typename == 'float':
@@ -96,17 +98,17 @@ class File:
         return 0
 
     def changevalue(self, name:str, value): # changes current value for a stat which will be written if wanted
-        self.stat[name]['value'] = value # updates the value
-        self.stat[name]['write'] = 1
-        print(f'File: New value set: {name} - {value}')
+        self.stat[name]['value'] = value # updates the value !!This is not in the file, this is a buffer in memory!!
+        self.stat[name]['write'] = 1 # A flag that tells the writefunction, that it should write this on the next write.
+        cs.debug(f'File: New value set: {name} - {value}')
 
     def write(self):
-        print('File: Writing to file')
+        cs.debug('File: Writing to file')
         with open(self.path, 'rb+') as f: # opens the file
             for index, statname in enumerate(self.stat): # goes through all stats
                 stat = self.stat[statname]
-                if stat['write'] == 1: # checks if a new value has been made
-                    print(f'File: Writing {stat['value']} @ {stat['offset']} as {stat['type']}')
+                if stat['write'] == 1: # Checks Write flag
+                    cs.debug(f'File: Writing {stat['value']} @ {stat['offset']} as {stat['type']}')
                     f.seek(stat['offset']) # finds the stats offset
                     if stat['type'] == 'float': # if float use struct
                         value = float(stat['value'])
@@ -124,7 +126,8 @@ class File:
                     f.write(data) # writes the value to a given offset
                     stat['write'] = 0 # sets the write to 0 until it is changed again
                 else:
-                    print(f'File: Skipping {stat}, no new value') # skips if write is not 1
+                    cs.debug(f'File: Skipping {stat}, no new value') # skips if write is not 1
+        self.hasbeenwritten = True
 
                     
         

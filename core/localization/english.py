@@ -21,7 +21,7 @@ english = {
     13: "Please open a file",
     14: "The selected file did not get recognized as a supported fileformat by the program.",
     15: 'OK',
-    16: 'Print File',
+    16: 'Revert to\noriginal',
     17: 'Opening file, please wait...',
     18: 'Write',
     19: 'Writing to file...',
