@@ -1,18 +1,17 @@
-import core.settings as cs
-import core.file as file
+import core
 import customtkinter as ctk
 import tkinter as tk
 
 class Button:
     def __init__(self, parent, label, function, state:bool = True):
-        if cs.current == None: # gets backup settings if settings doesnt exist
+        if core.settings == None: # gets backup settings if settings doesnt exist
             self.backupsettings()
         else:
             self.getsettings()
         if isinstance(label, int): # If label is a number get it from settings language. If it isnt, its a string from popup and settings is corrupt/None
-            label = cs.current.language[label]
+            label = core.settings.language[label]
         self.name = label
-        cs.debug(f'Button: Creating "{self.name}" with state: {state}')
+        core.debug(f'Button: Creating "{self.name}" with state: {state}')
         self.button = ctk.CTkButton(parent, text=label, command=function,
         fg_color=self.background, 
         text_color=self.text, 
@@ -28,14 +27,14 @@ class Button:
     def changestate(self, state:bool = True):
         currentstate = self.button._state # Mostly to avoid spam in terminal. Also stops any undesired behaviour in ui
         if state == False and currentstate == 'normal': # disables button if supplied bool is false
-            cs.debug(f"Button: disabling button {self.name}")
+            core.debug(f"Button: disabling button {self.name}")
             self.button.configure(state='disabled')
         if state == True and currentstate == 'disabled':
-            cs.debug(f"Button: enabling button {self.name}")
+            core.debug(f"Button: enabling button {self.name}")
             self.button.configure(state='normal') # enables button if supplied bool is true
 
     def clear(self):
-        cs.debug(f'Button: destroying "{self.name}"')
+        core.debug(f'Button: destroying "{self.name}"')
         self.button.destroy()
 
     def backupsettings(self):
@@ -47,16 +46,16 @@ class Button:
         self.accent = '#444444'
 
     def getsettings(self):
-        self.darkaccent = cs.current.darkaccent
-        self.highlight = cs.current.highlight
-        self.accent = cs.current.accent
-        self.background = cs.current.background
-        self.border = cs.current.border
-        self.text = cs.current.text
+        self.darkaccent = core.settings.darkaccent
+        self.highlight = core.settings.highlight
+        self.accent = core.settings.accent
+        self.background = core.settings.background
+        self.border = core.settings.border
+        self.text = core.settings.text
 
 class Inputbox:
     def __init__(self, parent, row, name, value, backgroundcolor):
-        cs.debug(f'InputBox: Creating "{name}" with value: {value}')
+        core.debug(f'InputBox: Creating "{name}" with value: {value}')
 
         self.name = name
         
@@ -70,7 +69,7 @@ class Inputbox:
         self.main.columnconfigure(1, weight=1)
         self.main.columnconfigure(2, weight=0)
 
-        self.title = ctk.CTkLabel(self.main, text_color=cs.current.text, fg_color=backgroundcolor,
+        self.title = ctk.CTkLabel(self.main, text_color=core.settings.text, fg_color=backgroundcolor,
             text=name)
         self.title.grid(column=0, row=0, sticky='W', padx=4, pady=1)
         
@@ -83,8 +82,8 @@ class Inputbox:
                                   validate = 'key',
                                   validatecommand=(checknumber, '%P'),
                                   fg_color=backgroundcolor,
-                                  text_color=cs.current.text,
-                                  border_color=cs.current.border,
+                                  text_color=core.settings.text,
+                                  border_color=core.settings.border,
                                   width=100,
                                   height=15,
                                   )
@@ -100,7 +99,7 @@ class Inputbox:
             self.input.configure(state='normal')
 
     def clear(self):
-        cs.debug(f'InputBox: Destroying {self.name}')
+        core.debug(f'InputBox: Destroying {self.name}')
         self.value.trace_remove('write', self.trace)
         self.main.destroy()
 
@@ -108,18 +107,18 @@ class Inputbox:
         newval = self.input.get()
         if newval == '':
             return 0
-        if file.current.stat[self.name]['type'] == 'float':
+        if core.file and core.file.stat[self.name]['type'] == 'float':
             newval = float(newval)
         else:
             newval = int(newval)
-        cs.debug(f'InputBox: Returning {newval}')
+        core.debug(f'InputBox: Returning {newval}')
         return newval
 
     def validvaluecheck(self, typedvalue):
         if typedvalue == "":
             return True
         try:
-            if file.current.stat[self.name]['type'] == 'float':
+            if core.file and core.file.stat[self.name]['type'] == 'float':
                 float(typedvalue)
             else:
                 int(typedvalue)
@@ -130,10 +129,10 @@ class Inputbox:
 class Separator:
     def __init__(self, parent, row:int, column:int, span:int, orientation:str):
         if orientation == 'horizontal':
-            self.main = ctk.CTkFrame(parent, height=2, fg_color=cs.current.border)
+            self.main = ctk.CTkFrame(parent, height=2, fg_color=core.settings.border)
             self.main.grid(row=row, column=column, columnspan=span, sticky='EW')
         elif orientation == 'vertical':
-            self.main = ctk.CTkFrame(parent, width=2, fg_color=cs.current.border)
+            self.main = ctk.CTkFrame(parent, width=2, fg_color=core.settings.border)
             self.main.grid(row=row, column=column, rowspan=span, sticky='NS')
             
 

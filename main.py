@@ -1,8 +1,6 @@
-import core.settings as cs
+import core
 from tkinter import filedialog
 from gui import * 
-import core.file as file
-from core.file import File
 
 class Main:
     def __init__(self):
@@ -62,13 +60,13 @@ class Main:
         if tempfilepath: # If the user selected a file continue
             print('Main: File selected - Checking Support')
             self.filedisplay.changetext(17)
-            tempfile = File(tempfilepath) # creates the openend file as a fileclass
+            tempfile = core.File(tempfilepath) # creates the openend file as a fileclass
             self.supportcheck(tempfile) # Function that checks whether a file is supported
 
     def filealreadyopencheck(self) -> bool:
         print('Main: Checking no file is already open')
         continueload = True
-        if file.current != None:
+        if core.file != None:
             popup = Popup(23, 24, root=self.root)
             continueload = popup.buttonsbool(25, 26)   
         return continueload
@@ -89,15 +87,20 @@ class Main:
             popup.buttonsackknowledge(15)
             if self.firstopen == True:
                 self.filedisplay.changetext(13)
+            elif core.file:
+                self.filedisplay.changetext(core.file.fullname)
             else:
-                self.filedisplay.changetext(file.current.fullname)
+                print('Main: Something went wrong when running supportcheck')
         if continueload == True:
             print('Main: Mounting file')
             tempfile.mount() # Mounts the file as core.file.current
             #searchpattern = settings.searchpatterns[file.current.extension] # figures out what searchpattern to use
             #searchpattern() # runs the searchpattern
+            if core.file == None:
+                print('Main: Supportcheck after mount: File is None')
+                return
             print('\n----------------------------------------------------------------------------------')
-            print(f'\nMain: {file.current.fullname}\n')
+            print(f'\nMain: {core.file.fullname}\n')
             print('----------------------------------------------------------------------------------\n')
             from Suites.GhostReconBreakpoint.GR_WeaponDBEntry import read as readweaponentry
             readweaponentry()
@@ -106,8 +109,9 @@ class Main:
                 self.statdisplay.clear()
             self.firstopen = False
             self.statdisplay.newfile(self.updatebuttons)
-            self.filedisplay.changetext(file.current.fullname)
+            self.filedisplay.changetext(core.file.fullname)
             self.newfile = True
+            
 
     def disableallbuttons(self):
         print('Main: Disabling all buttons')
@@ -127,13 +131,16 @@ class Main:
 
     def writetofile(self):
         print('Main: Writing to file')
+        if core.file == None:
+            print('Main: Writetofile: File is None')
+            return
         self.disableallbuttons()
         self.statdisplay.state_toggleall()
         self.filedisplay.changetext(19)
         writeok = self.statdisplay.sendnewvaluestofile()
         if writeok == True:
-            file.current.write()
-            self.filedisplay.changetext(20, file.current.fullname)
+            core.file.write()
+            self.filedisplay.changetext(20, core.file.fullname)
             self.filehasbeenedited = False
             self.enableallbuttons()
             if self.statdisplay.revertcount <= 0:
@@ -145,31 +152,32 @@ class Main:
             print('Main: Something went wrong when writing')
             popup = Popup(22, 21, self.root)
             popup.buttonsackknowledge(15)
-            self.filedisplay.changetext(file.current.fullname)
+            self.filedisplay.changetext(core.file.fullname)
             self.enableallbuttons()
         self.statdisplay.state_toggleall()
         
     def revertstats(self):
-        if file.current != None and self.revert:
+        if core.file != None and self.revert:
             print('Main: Reverting last')
             self.revert.changestate(False)
             self.statdisplay.revertlast()
+            if self.statdisplay.revertcount == 0:
+                self.revert.changestate(False)
+                self.revertoriginal.changestate(False)
+                if core.file.hasbeenwritten == False:
+                    self.write.changestate(False)
+                else:
+                    self.write.changestate()
         else:
             print('Main: No file mounted, could not revert.')
-        if self.statdisplay.revertcount == 0:
-            self.revert.changestate(False)
-            self.revertoriginal.changestate(False)
-            if file.current.hasbeenwritten == False:
-                self.write.changestate(False)
-            else:
-                self.write.changestate(True)
+        
 
     def revertoriginalstats(self):
-        if file.current != None and self.revertoriginal:
+        if core.file != None and self.revertoriginal:
             print('Main: Reverting settings to original')
             self.statdisplay.revertoriginal()
             self.revertoriginal.changestate(False)
-            if file.current.hasbeenwritten == False:
+            if core.file.hasbeenwritten == False:
                 self.write.changestate(False)
         else:
             print('Main: No file mounted, could not revert to original.')
@@ -180,12 +188,13 @@ class Main:
         
 
 if __name__ == '__main__': 
-    settingsinit = cs.initsettings()
+    settingsinit = core.initsettings()
     if settingsinit == False: # stops the program if settings couldnt be set
         popup = Popup(1, 8, backup=True) # Creates a popup telling the user settings are broke
         createnewsettings = popup.buttonsbool(9, 10) # asks whether or not a new settings file should be created
         if createnewsettings == True:
-            settingsinit = cs.forcecreatesettings()
+            settingsinit = core.forcecreatesettings()
     # if settings are read properly, imports everything and starts Main(controller)
     if settingsinit == True:
-        Main()
+        core.SuiteReader()
+        #Main()

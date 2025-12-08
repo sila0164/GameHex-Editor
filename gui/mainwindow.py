@@ -1,6 +1,5 @@
 import customtkinter as ctk
-import core.settings as cs
-import core.file as file
+import core
 import gui.common as gui
 
 class MainWindow:# The main window that contains everything
@@ -9,9 +8,9 @@ class MainWindow:# The main window that contains everything
 
         # Creates itself
         self.root = ctk.CTk()
-        self.root.title(cs.current.language[12])
+        self.root.title(core.settings.language[12])
         self.root.geometry("450x600")
-        self.main = ctk.CTkFrame(self.root, fg_color=cs.current.background)
+        self.main = ctk.CTkFrame(self.root, fg_color=core.settings.background)
         self.root.grid_rowconfigure(0, weight=1)
         self.root.grid_columnconfigure(0, weight=1)
         self.main.grid(row=0, column=0, sticky='NSEW')
@@ -31,7 +30,7 @@ class MainWindow:# The main window that contains everything
 
 class ButtonBox: # The box on the left side of the window containing the buttons
     def __init__(self, parent, parentcolumn: int=0, parentrow: int=2):
-        self.main = ctk.CTkFrame(parent, fg_color=cs.current.background,
+        self.main = ctk.CTkFrame(parent, fg_color=core.settings.background,
         corner_radius=0, border_width=0)
         self.main.grid(row=parentrow, column=parentcolumn, sticky='NSEW')
         self.buttoncount = 0 # a counter of buttons, to automatically create buttons without needing to get row number
@@ -51,31 +50,31 @@ class ButtonBox: # The box on the left side of the window containing the buttons
 class FileDisplay: # The text/message display at the top of the window
         
     def __init__(self, message, parent: ctk.CTkFrame, parentcolumn: int=0, parentrow: int=0, columnspan: int=1000):
-        self.filedisplayframe = ctk.CTkFrame(parent, fg_color=cs.current.background,
+        self.filedisplayframe = ctk.CTkFrame(parent, fg_color=core.settings.background,
         corner_radius=0,
         )
         if isinstance(message, int):
-            message = cs.current.language[message]
+            message = core.settings.language[message]
         self.filedisplayframe.grid(column=parentcolumn, columnspan=columnspan, row=parentrow, sticky='WNSE')
-        self.filedisplay = ctk.CTkLabel(self.filedisplayframe, text=message, bg_color=cs.current.background,
-        text_color=cs.current.text)
+        self.filedisplay = ctk.CTkLabel(self.filedisplayframe, text=message, bg_color=core.settings.background,
+        text_color=core.settings.text)
         self.filedisplay.grid(column=0, row=0, sticky='W', padx=4)
     
     def changetext(self, message, delayedmessage = None, timer: int = 3500):
         if isinstance(message, int):
-            message = cs.current.language[message]
+            message = core.settings.language[message]
         self.filedisplay.configure(text=message)
         self.filedisplay.update_idletasks()
         if delayedmessage != None:
             if isinstance(delayedmessage, int):
-                delayedmessage = cs.current.language[delayedmessage]
+                delayedmessage = core.settings.language[delayedmessage]
             self.filedisplay.after (timer, lambda: self.filedisplay.configure(text=delayedmessage))
 
 class StatDisplay: # The main data manipulation interface
     def __init__(self, parent: ctk.CTkFrame, parentcolumn: int=2, parentrow: int=2):
         self.main = ctk.CTkScrollableFrame(parent,
-        fg_color=cs.current.darkaccent,
-        scrollbar_fg_color=cs.current.background,
+        fg_color=core.settings.darkaccent,
+        scrollbar_fg_color=core.settings.background,
         corner_radius=0)
         self.main.grid(row=parentrow, column=parentcolumn, sticky='NSEW')
         self.main.columnconfigure(0, weight=1)
@@ -90,20 +89,23 @@ class StatDisplay: # The main data manipulation interface
         self.lastvalue = {}
         self.revertcount = 0
         self.inputs = {} # keeps track of the inputboxes
-        for index, key in enumerate(file.current.stat): # creates an inputbox for each stat in the dictionary
-            self.main.rowconfigure(self.rowcount, weight=0) #Configures the row
-            value = file.current.stat[key]['value']
-            bgcolor = cs.current.accent
-            colorcalc = self.rowcount / 2
-            if colorcalc % 2 == 0: # Makes the backgroundcolor change for every other entry
-                bgcolor = cs.current.darkaccent
-            self.inputs[key] = gui.Inputbox(self.main, self.rowcount, key, value, bgcolor)
-            self.inputs[key].valuegetupdates(enablewrite)
-            self.originalvalue[key] = value
-            self.lastvalue[key] = value
-            self.rowcount += 1 # Counts the row up 1
-            self.horsep = gui.Separator(self.main, self.rowcount, 0, 2, 'horizontal')
-            self.rowcount += 1
+        if core.file:
+            for index, key in enumerate(core.file.stat): # creates an inputbox for each stat in the dictionary
+                self.main.rowconfigure(self.rowcount, weight=0) #Configures the row
+                value = core.file.stat[key]['value']
+                bgcolor = core.settings.accent
+                colorcalc = self.rowcount / 2
+                if colorcalc % 2 == 0: # Makes the backgroundcolor change for every other entry
+                    bgcolor = core.settings.darkaccent
+                self.inputs[key] = gui.Inputbox(self.main, self.rowcount, key, value, bgcolor)
+                self.inputs[key].valuegetupdates(enablewrite)
+                self.originalvalue[key] = value
+                self.lastvalue[key] = value
+                self.rowcount += 1 # Counts the row up 1
+                self.horsep = gui.Separator(self.main, self.rowcount, 0, 2, 'horizontal')
+                self.rowcount += 1
+        else:
+            print('Error: StatDisplay: Could not read files stat dictionary')
 
     def updaterevert(self, statname):
         newval = self.inputs[statname].getvalue()
@@ -113,18 +115,18 @@ class StatDisplay: # The main data manipulation interface
             duplicatecheck = self.revertcount - 1
             if self.revertcount > 0 and self.revert[str(duplicatecheck)]['name'] == statname:
                 self.lastvalue[statname] = newval
-                cs.debug(f'Revert log: {self.revert}')
+                core.debug(f'StatDisplay: Revert log: {self.revert}')
                 return # This stops it from creating 10 entries for every little change in a box. Just saves the value at first change.
         self.revert[str(self.revertcount)] = {}
         self.revert[str(self.revertcount)]['name'] = statname
         self.revert[str(self.revertcount)]['value'] = self.lastvalue[statname]
         self.lastvalue[statname] = newval
         self.revertcount += 1
-        cs.debug(f'Revert log: {self.revert}')
+        core.debug(f'StatDisplay: Revert log: {self.revert}')
 
     def revertlast(self):
         self.revertlastisactive = True
-        cs.debug(f'Before Revert: {self.revertcount}')
+        core.debug(f'StatDisplay: Before Revert: {self.revertcount}')
         numberinlist = self.revertcount - 1
         inputname = self.revert[str(numberinlist)]['name']
         inputoldvalue = self.revert[str(numberinlist)]['value']
@@ -132,16 +134,15 @@ class StatDisplay: # The main data manipulation interface
         del self.revert[str(numberinlist)]
         self.revertcount -= 1
         self.revertlastisactive = False
-        cs.debug(f'After Revert: {self.revertcount}')
+        core.debug(f'StatDisplay: After Revert: {self.revertcount}')
 
     def revertoriginal(self):
         self.revertoriginalisactive = True
         for index, input in enumerate(self.inputs):
             currentvalue = self.inputs[input].getvalue()
             originalvalue = self.originalvalue[input]
-            type = file.current.stat[input]['type']
             if currentvalue != originalvalue:
-                cs.debug(f'StatDisplay: revertoriginal: in box: {currentvalue} - original: {originalvalue}')
+                core.debug(f'StatDisplay: revertoriginal: in box: {currentvalue} - original: {originalvalue}')
                 self.inputs[input].value.set(originalvalue)
         self.revertoriginalisactive = False
 
@@ -157,12 +158,12 @@ class StatDisplay: # The main data manipulation interface
         try:
             for index, input in enumerate(self.inputs):
                 newvalue = self.inputs[input].getvalue()
-                if file.current.stat[input]['value'] != newvalue:
-                    cs.debug(f'DEBUG: StatDisplay: Sending {input} to write. {file.current.stat[input]['value']} -> {newvalue}')
-                    file.current.changevalue(input, newvalue)
+                if core.file and core.file.stat[input]['value'] != newvalue:
+                    core.debug(f'StatDisplay: Sending {input} to write. {core.file.stat[input]['value']} -> {newvalue}')
+                    core.file.changevalue(input, newvalue)
             return True
         except Exception as e:
-            cs.debug(f'DEBUG: StatDisplay: Error: {e}')
+            core.debug(f'StatDisplay: Error: {e}')
             return False
     
     
