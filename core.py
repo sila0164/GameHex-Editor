@@ -277,18 +277,27 @@ class SuiteReader:
             return
         self.suitesfolder = settings.suitesfolder
         self.supportedextensions = {}
+        self. = {}
         debug(f'SuiteReader: Beginning read in {self.suitesfolder}')
         for folder in os.listdir(self.suitesfolder):
             path = os.path.join(self.suitesfolder, folder)
             mainfile = os.path.join(path, 'main.ghx')
             debug(f'Suitereader: New suite: {path}')
-            debug('SuiteReader: sending to readmainfile')
-            try:
+            if os.path.exists(mainfile):
+                debug('SuiteReader: sending to readmainfile')
                 self.readmainfile(path, mainfile)
-            except:
+            else:
                 debug('SuiteReader: No main.ghx')
                 self.readwithoutmainfile(path)
+            self.readdependencies(path)
             debug(f'SuiteReader: Read Suites in {path} as {self.supportedextensions}')
+
+    def readdependencies(self, path):
+        for script in os.listdir(path):
+            if script.endswith('.ghd'):
+                scriptpath = os.path.join(path, script)
+                fileformat = script.replace('.ghd', '')
+                self.dependencies[fileformat] = scriptpath
 
     def readwithoutmainfile(self, path):
         for script in os.listdir(path):
@@ -302,33 +311,78 @@ class SuiteReader:
             line = f.readline()
             while line:
                 linewords = line.split(':', maxsplit=2)
-                script = linewords[1].replace(' ', '')
-                fileformat = linewords[0].replace('.', '')
-                if script != '.ghx':
-                    script = '.'.join([linewords[1], 'ghx'])
-                scriptpath = os.path.join(path, script)
-                self.supportedextensions[fileformat] = scriptpath
+                script = linewords[1].strip()
+                if '.ghx' not in script:
+                    script = '.'.join([script, 'ghx']) #Adds the suffix .ghx to the name of the script, if it isnt there
+                fileformats = linewords[0]
+                print(fileformats)
+                fileformats = cleanmultientry(fileformats)
+                print(fileformats)
+                for index, fileformat in enumerate(fileformats):   
+                    scriptpath = os.path.join(path, script)
+                    if os.path.exists(scriptpath):
+                        self.supportedextensions[fileformat] = scriptpath
+                    else:
+                        print(f'SuiteReader: {script} does not exist in folder, despite being referenced in main.ghx')
                 line = f.readline()
                 
-class ScriptReader:
-    def __init__(self, file: File, suites:SuiteReader):
+class Script:
+    def run(self, file: File, suites:SuiteReader):
+        self.dependencies = {}
+        self.currentoffset = 0
         script = suites.supportedextensions[file.extension]
+        linenum = 0
         with open(script) as f:
             line = f.readline()
             while line:
-                if line.startswith('dependiencies:'):
+                if line.startswith('Dependency:'):
                     self.readdependencies(line)
+                elif line.startswith('@' or 'at') and line == 'read':
+                    self.readoffset(line)
+                elif line.startswith('@' or 'at') and line == 'search':
+                    self.search(line)
                 else:
-                    self.readfunction(line)
+                    print(f'ScriptRunner: Unknown command at line {linenum}')
+                linenum += 1
                 line = f.readline()        
 
-    def readdependencies(self, line):
-        dependencies = line.split(',')
+    def readdependencies(self, line) -> dict:
+        dependencies = line.removeprefix('Dependency:')
+        dependencies = cleanmultientry(dependencies)
+        self.dependencydictionary = {}
+        for index, dependency in enumerate(dependencies):   
+            dependencypath = os.path.join(path, dependency)
+        if os.path.exists(dependency):
+            self.dependencydictionary[dependency] = self.readghd(dependencypath)
+        else:
+            print(f'ScriptRunner: {dependency} does not exist in folder, despite being referenced in main.ghx')
+        return dependencydictionary
 
-    #def readfunction(self, line):
-    #    if line.startswith('@' or 'at'):
 
-                
+        
+
+       
+
+
+def cleanmultientry(string: str) -> list:
+    """
+    Docstring for cleanmultientry
+    
+    :param string: Splits up strings at ',' and removes ' ' and '.' from each entry.
+    :type string: str
+    :return: Returns each entry seperated by ',' in a list.
+    :rtype: list[Any]
+    """
+    if ',' in string:
+        stringamount = string.count(',')
+        strings = string.split(',')
+    else:
+        stringamount = 0
+        strings = [string,]
+    while stringamount > -1:
+        strings[stringamount] = strings[stringamount].strip().replace('.', '')
+        stringamount -= 1 
+    return strings
 
                         
 
