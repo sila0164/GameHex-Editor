@@ -49,7 +49,7 @@ class File:
         current = self
         debug(f'File: {self.name} mounted')
 
-    def readtype(self, typename: str, offset: int):
+    def readtype(self, typename: str, offset: int): #ADD Ability to use dictionary values 
         if typename == 'float':
             valuehex = self.hex[offset:offset+4]
             valueread = struct.unpack('<f', valuehex)[0] #saves value as float
@@ -265,18 +265,25 @@ def initsettings() -> bool:
         settingsinit = False
     return settingsinit                    
         
-def cleanmultientry(string: str) -> list:
+
+
+#------------------------------------------------------------------------------------------
+# Everything after this is for translating and using the gh fileformats and scriptlanguage
+
+
+
+def cleanmultientry(string: str, separator:str=',') -> list:
     """
     Docstring for cleanmultientry
     
-    :param string: Splits up strings at ',' and removes ' ' and '.' from each entry.
-    :type string: str
-    :return: Returns each entry seperated by ',' in a list.
-    :rtype: list[Any]
+    :param string: Splits up strings at {separator} (if any) and removes ' ' and '.' from each entry.
+    :param separator: Defaults to ','. Defines what is used to separate each entry in the string
+    :return: Returns each entry as a list. If only one is provided it still returns it as a list.
+    :rtype: list[str]
     """
-    if ',' in string:
-        stringamount = string.count(',')
-        strings = string.split(',')
+    if separator in string:
+        stringamount = string.count(separator)
+        strings = string.split(separator)
     else:
         stringamount = 0
         strings = [string,]
@@ -285,55 +292,69 @@ def cleanmultientry(string: str) -> list:
         stringamount -= 1 
     return strings
 
-class SuiteReader:
+def readghl(path) -> dict:
+    """
+    Docstring for readghl
+    
+    :param path: The ghl filepath of the list needed to be loaded
+    :return: returns the ghl's list as a dictionary
+    :rtype: dict[string(if multiple, each one becomes an entry), string or int]
+    """
+    returndict = {}
+    with open(path) as f:
+        line = f.readline()
+        while line:
+            linewords = line.split(':', maxsplit=2)
+            firststring = cleanmultientry(linewords[0])
+            laststring = linewords[1].strip()
+            debug(f'Core readlist: {firststring} - {laststring}')
+            for index, name in enumerate(firststring):
+                returndict[name] = laststring
+            line = f.readline()
+    return returndict
+
+class Suites: # Finished - ADD Ability to have multiple scripts for same filetype.
     def __init__(self):
         if settings == None:
-            print('SuiteReader: No Settings')
+            print('Suites: No Settings')
             return
         self.suitesfolder = settings.suitesfolder
         self.supportedextensions = {}
-        debug(f'SuiteReader: Beginning read in {self.suitesfolder}')
+        debug(f'Suites: Beginning read in {self.suitesfolder}')
         for folder in os.listdir(self.suitesfolder):
             path = os.path.join(self.suitesfolder, folder)
             mainfile = os.path.join(path, 'main.ghx')
-            debug(f'Suitereader: New suite: {path}')
+            debug(f'Suites: New suite: {path}')
             if os.path.exists(mainfile):
-                debug('SuiteReader: sending to readmainfile')
+                debug('Suites: sending to readmainfile')
                 self.readmainfile(path, mainfile)
             else:
-                debug('SuiteReader: No main.ghx')
-                self.readwithoutmainfile(path)
-            debug(f'SuiteReader: Read Suites in {path} as {self.supportedextensions}')
+                debug('Suites: No main.ghx, skipping')
+            self.readwithoutmainfile(path)
+            debug(f'Suites: Read Suites in {path} as {self.supportedextensions}')
 
     def readwithoutmainfile(self, path):
         for script in os.listdir(path):
             if script.endswith('.ghx'):
                 scriptpath = os.path.join(path, script)
                 fileformat = script.replace('.ghx', '')
-                self.supportedextensions[fileformat] = scriptpath
+                if script not in self.supportedextensions.items():
+                    self.supportedextensions[fileformat] = scriptpath
+                    debug(f'Suites readwithoutmainfile: {fileformat} - {scriptpath}')
 
     def readmainfile(self, path, mainfile):
-        with open(mainfile) as f:
-            line = f.readline()
-            while line:
-                linewords = line.split(':', maxsplit=2)
-                script = linewords[1].strip()
-                if '.ghx' not in script:
-                    script = '.'.join([script, 'ghx']) #Adds the suffix .ghx to the name of the script, if it isnt there
-                fileformats = linewords[0]
-                print(fileformats)
-                fileformats = cleanmultientry(fileformats)
-                print(fileformats)
-                for index, fileformat in enumerate(fileformats):   
-                    scriptpath = os.path.join(path, script)
-                    if os.path.exists(scriptpath):
-                        self.supportedextensions[fileformat] = scriptpath
-                    else:
-                        print(f'SuiteReader: {script} does not exist in folder, despite being referenced in main.ghx')
-                line = f.readline()
+        scripts = readghl(mainfile)
+        for fileformat, script in scripts.items():
+            if '.ghx' not in script:
+                script = '.'.join([script, 'ghx']) #Adds the suffix .ghx to the name of the script, if it isnt there   
+            scriptpath = os.path.join(path, script)
+            if os.path.exists(scriptpath):
+                self.supportedextensions[fileformat] = scriptpath
+            else:
+                print(f'Suites readmainfile: {script} does not exist in folder, despite being referenced in main.ghx')
                 
-class Script:
-    def run(self, file: File, suites:SuiteReader):
+class Script: # Unfinished
+    def run(self, file: File, suites:Suites):
         self.dependencies = {}
         self.currentoffset = 0
         script = suites.supportedextensions[file.extension]
@@ -341,33 +362,64 @@ class Script:
         with open(script) as f:
             line = f.readline()
             while line:
-                if line.startswith('@' or 'at') and line == 'read':
+                linelowercase = line.lower()
+                if linelowercase.startswith('@' or 'at') and 'read' in linelowercase:
                     self.readoffset(line)
-                elif line.startswith('@' or 'at') and line == 'search':
+                elif linelowercase.startswith('@' or 'at') and 'search' in linelowercase:
                     self.search(line)
-                elif line.startswith('Dependency:'):
-                    self.readdependencies(line, script)
+                elif linelowercase.startswith('@' or 'at'):
+                    self.moveoffset(line)
+                elif linelowercase.startswith('dependency:'):
+                    self.readdependency(line, script)
                 else:
                     print(f'ScriptRunner: Unknown command at line {linenum}')
                 linenum += 1
-                line = f.readline()        
+                line = f.readline()
 
-    def readdependencies(self, line, path) -> dict:
-        dependencies = line.removeprefix('Dependency:')
-        dependencies = cleanmultientry(dependencies)
-        self.dependencydictionary = {}
+    def readoffset(self, line: str): #Unfinished ADD ability to read hex value and not just integers
+        strings = cleanmultientry(line, separator=' ')
+        linelower = line.lower()
+
+        if '@: ' or 'at: ' or '@ ' or 'at ' in linelower: # Sets the offset
+            offset = strings[1].lower()
+        else:
+            offset = strings[0].lower().replace('@:' or 'at:', '')
+        if offset == '' or 'read' or None:
+            offset = self.currentoffset
+        else:
+            offset = int(offset)    
+
+        checktoobject = False
+        if 'from' in linelower:
+            checktoobject = True
+
+        for index, string in enumerate(strings):
+            stringlower = string.lower()
+            if stringlower == 'read' and checktoobject == False:
+                readtype = strings[index + 1].lower()
+                index += 1
+            else:
+                #getlist here
+            elif "'" or '"' in string:
+                name = string.replace('"' or "'", '')
+
+    def readdependency(self, line: str, path: str): # Finished
+        dependencies = cleanmultientry(line)
+        del dependencies[0] #Removes the 'dependency:' prefix of the line.
         for index, dependency in enumerate(dependencies):
-            pathtosuitefolder = os.path.split(path)
-            if '.ghd' not in dependency:
+            pathtosuitefolder, scriptfilename = os.path.split(path)
+            if '.ghl' not in dependency:
                 dependency = '.'.join([dependency, 'ghl'])   
             dependencypath = os.path.join(pathtosuitefolder, dependency)
-            debug(f'Scriptrunner: Dependency: {dependency} path: {dependencypath}')
-            ressourcefolder = os.path.join(pathtosuitefolder, 'Resources')
-            if os.path.exists(dependency):
-                self.dependencydictionary[dependency] = self.readghd(dependencypath)
-            elif os.path.exists(ressouces\dependency)
+            debug(f'Script: readdependency: Dependency: {dependency} path: {dependencypath}')
+            resourcefolder = os.path.join(pathtosuitefolder, 'Resources')
+            if os.path.exists(dependencypath) == False:
+                dependencypath = os.path.join(resourcefolder, dependency)
+            if os.path.exists(dependencypath) == False:
+                print(f'Script readdependency: {dependency} does not exist in folder, despite being referenced in {scriptfilename}')                 
             else:
-                print(f'ScriptRunner: {dependency} does not exist in folder, despite being referenced in main.ghx')
+                self.dependencies[dependency] = readghl(dependencypath)
+            
         
 
 
