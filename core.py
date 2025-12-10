@@ -198,11 +198,6 @@ class Settings:
             print("Settings: Creating backup folder if there isn't any")
             os.makedirs('Backups', exist_ok=True)
 
-    def getsuites(self):
-        from Suites.GhostReconBreakpoint import GR_WeaponDBEntry
-        self.supportedfiles = ['GR_WeaponDBEntry']
-        self.searchpatterns = {'GR_WeaponDBEntry': GR_WeaponDBEntry.read}
-
     def getdir(self) -> str:
         return self.root
     
@@ -270,6 +265,26 @@ def initsettings() -> bool:
         settingsinit = False
     return settingsinit                    
         
+def cleanmultientry(string: str) -> list:
+    """
+    Docstring for cleanmultientry
+    
+    :param string: Splits up strings at ',' and removes ' ' and '.' from each entry.
+    :type string: str
+    :return: Returns each entry seperated by ',' in a list.
+    :rtype: list[Any]
+    """
+    if ',' in string:
+        stringamount = string.count(',')
+        strings = string.split(',')
+    else:
+        stringamount = 0
+        strings = [string,]
+    while stringamount > -1:
+        strings[stringamount] = strings[stringamount].strip().replace('.', '')
+        stringamount -= 1 
+    return strings
+
 class SuiteReader:
     def __init__(self):
         if settings == None:
@@ -277,7 +292,6 @@ class SuiteReader:
             return
         self.suitesfolder = settings.suitesfolder
         self.supportedextensions = {}
-        self. = {}
         debug(f'SuiteReader: Beginning read in {self.suitesfolder}')
         for folder in os.listdir(self.suitesfolder):
             path = os.path.join(self.suitesfolder, folder)
@@ -289,15 +303,7 @@ class SuiteReader:
             else:
                 debug('SuiteReader: No main.ghx')
                 self.readwithoutmainfile(path)
-            self.readdependencies(path)
             debug(f'SuiteReader: Read Suites in {path} as {self.supportedextensions}')
-
-    def readdependencies(self, path):
-        for script in os.listdir(path):
-            if script.endswith('.ghd'):
-                scriptpath = os.path.join(path, script)
-                fileformat = script.replace('.ghd', '')
-                self.dependencies[fileformat] = scriptpath
 
     def readwithoutmainfile(self, path):
         for script in os.listdir(path):
@@ -335,56 +341,38 @@ class Script:
         with open(script) as f:
             line = f.readline()
             while line:
-                if line.startswith('Dependency:'):
-                    self.readdependencies(line)
-                elif line.startswith('@' or 'at') and line == 'read':
+                if line.startswith('@' or 'at') and line == 'read':
                     self.readoffset(line)
                 elif line.startswith('@' or 'at') and line == 'search':
                     self.search(line)
+                elif line.startswith('Dependency:'):
+                    self.readdependencies(line, script)
                 else:
                     print(f'ScriptRunner: Unknown command at line {linenum}')
                 linenum += 1
                 line = f.readline()        
 
-    def readdependencies(self, line) -> dict:
+    def readdependencies(self, line, path) -> dict:
         dependencies = line.removeprefix('Dependency:')
         dependencies = cleanmultientry(dependencies)
         self.dependencydictionary = {}
-        for index, dependency in enumerate(dependencies):   
-            dependencypath = os.path.join(path, dependency)
-        if os.path.exists(dependency):
-            self.dependencydictionary[dependency] = self.readghd(dependencypath)
-        else:
-            print(f'ScriptRunner: {dependency} does not exist in folder, despite being referenced in main.ghx')
-        return dependencydictionary
-
-
+        for index, dependency in enumerate(dependencies):
+            pathtosuitefolder = os.path.split(path)
+            if '.ghd' not in dependency:
+                dependency = '.'.join([dependency, 'ghl'])   
+            dependencypath = os.path.join(pathtosuitefolder, dependency)
+            debug(f'Scriptrunner: Dependency: {dependency} path: {dependencypath}')
+            ressourcefolder = os.path.join(pathtosuitefolder, 'Resources')
+            if os.path.exists(dependency):
+                self.dependencydictionary[dependency] = self.readghd(dependencypath)
+            elif os.path.exists(ressouces\dependency)
+            else:
+                print(f'ScriptRunner: {dependency} does not exist in folder, despite being referenced in main.ghx')
         
 
-       
 
 
-def cleanmultientry(string: str) -> list:
-    """
-    Docstring for cleanmultientry
-    
-    :param string: Splits up strings at ',' and removes ' ' and '.' from each entry.
-    :type string: str
-    :return: Returns each entry seperated by ',' in a list.
-    :rtype: list[Any]
-    """
-    if ',' in string:
-        stringamount = string.count(',')
-        strings = string.split(',')
-    else:
-        stringamount = 0
-        strings = [string,]
-    while stringamount > -1:
-        strings[stringamount] = strings[stringamount].strip().replace('.', '')
-        stringamount -= 1 
-    return strings
 
                         
-
 
 
