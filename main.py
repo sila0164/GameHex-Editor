@@ -66,50 +66,46 @@ class Main:
     def filealreadyopencheck(self) -> bool:
         print('Main: Checking no file is already open')
         continueload = True
-        if core.file != None:
+        if self.current_file:
             popup = Popup(23, 24, root=self.root)
             continueload = popup.buttonsbool(25, 26)   
         return continueload
     
     def supportcheck(self, tempfile):
         continueload = False
-        support = tempfile.hassupport() # returns a string depending on support-level; confirmed, unknown, unsupported
-        if support == 'confirmed': # if the id is known, it will just read it
-            print('Main: Support check: Full Support')
-            continueload = True
-        if support == 'unknown': # if the file extension is known, but the id isnt, the user is prompted to choose whether or not to continue
-            print('Main: Support check: Fileextension Support, unknown ID.')
+        if tempfile.extension in core.suites.supported_extensions:
+            print('Main: Support check: Fileextension Support')
             popup = Popup(7, 8, root=self.root)
             continueload = popup.buttonsbool(9,10)
-        if support == 'unsupported': # Informs the user the file isnt supported and doesnt continue
+        else:
             print('Main: Support check: Unsupported')
             popup = Popup(11, 14, root=self.root)
             popup.buttonsackknowledge(15)
             if self.firstopen == True:
                 self.filedisplay.changetext(13)
-            elif core.file:
-                self.filedisplay.changetext(core.file.fullname)
+            elif self.current_file:
+                self.filedisplay.changetext(self.current_file.fullname)
             else:
                 print('Main: Something went wrong when running supportcheck')
+        
+        #if support == 'confirmed': # if the id is known, it will just read it
+         #   print('Main: Support check: Full Support')
+          #  continueload = True
         if continueload == True:
             print('Main: Mounting file')
-            tempfile.mount() # Mounts the file as core.file.current
-            #searchpattern = settings.searchpatterns[file.current.extension] # figures out what searchpattern to use
-            #searchpattern() # runs the searchpattern
-            if core.file == None:
-                print('Main: Supportcheck after mount: File is None')
-                return
+            self.current_file = tempfile
             print('\n----------------------------------------------------------------------------------')
-            print(f'\nMain: {core.file.fullname}\n')
+            print(f'\nMain: {self.current_file.fullname}\n')
             print('----------------------------------------------------------------------------------\n')
-            from Suites.GhostReconBreakpoint.GR_WeaponDBEntry import read as readweaponentry
-            readweaponentry()
+            core.debug(self.current_file)
+            self.script = core.Script(self.current_file, core.suites)
+            self.script.run()
             if self.firstopen == False:
                 print('Main: Clearing statdisplay, already had file loaded')
                 self.statdisplay.clear()
             self.firstopen = False
-            self.statdisplay.newfile(self.updatebuttons)
-            self.filedisplay.changetext(core.file.fullname)
+            self.statdisplay.newfile(self.updatebuttons, self.current_file)
+            self.filedisplay.changetext(self.current_file.fullname)
             self.newfile = True
             
 
@@ -131,7 +127,7 @@ class Main:
 
     def writetofile(self):
         print('Main: Writing to file')
-        if core.file == None:
+        if self.current_file == None:
             print('Main: Writetofile: File is None')
             return
         self.disableallbuttons()
@@ -139,8 +135,9 @@ class Main:
         self.filedisplay.changetext(19)
         writeok = self.statdisplay.sendnewvaluestofile()
         if writeok == True:
-            core.file.write()
-            self.filedisplay.changetext(20, core.file.fullname)
+            self.current_file = self.statdisplay.file
+            self.current_file.write()
+            self.filedisplay.changetext(20, self.current_file.fullname)
             self.filehasbeenedited = False
             self.enableallbuttons()
             if self.statdisplay.revertcount <= 0:
@@ -152,19 +149,19 @@ class Main:
             print('Main: Something went wrong when writing')
             popup = Popup(22, 21, self.root)
             popup.buttonsackknowledge(15)
-            self.filedisplay.changetext(core.file.fullname)
+            self.filedisplay.changetext(self.current_file.fullname)
             self.enableallbuttons()
         self.statdisplay.state_toggleall()
         
     def revertstats(self):
-        if core.file != None and self.revert:
+        if self.current_file and self.revert:
             print('Main: Reverting last')
             self.revert.changestate(False)
             self.statdisplay.revertlast()
             if self.statdisplay.revertcount == 0:
                 self.revert.changestate(False)
                 self.revertoriginal.changestate(False)
-                if core.file.hasbeenwritten == False:
+                if self.current_file.hasbeenwritten == False:
                     self.write.changestate(False)
                 else:
                     self.write.changestate()
@@ -173,11 +170,11 @@ class Main:
         
 
     def revertoriginalstats(self):
-        if core.file != None and self.revertoriginal:
+        if self.current_file and self.revertoriginal:
             print('Main: Reverting settings to original')
             self.statdisplay.revertoriginal()
             self.revertoriginal.changestate(False)
-            if core.file.hasbeenwritten == False:
+            if self.current_file.hasbeenwritten == False:
                 self.write.changestate(False)
         else:
             print('Main: No file mounted, could not revert to original.')
@@ -188,13 +185,16 @@ class Main:
         
 
 if __name__ == '__main__': 
-    settingsinit = core.initsettings()
-    if settingsinit == False: # stops the program if settings couldnt be set
+    settings_init = core.initsettings()
+    if settings_init == False: # stops the program if settings couldnt be set
         popup = Popup(1, 8, backup=True) # Creates a popup telling the user settings are broke
-        createnewsettings = popup.buttonsbool(9, 10) # asks whether or not a new settings file should be created
-        if createnewsettings == True:
-            settingsinit = core.forcecreatesettings()
+        create_new_settings = popup.buttonsbool(9, 10) # asks whether or not a new settings file should be created
+        if create_new_settings == True:
+            settings_init = core.forcecreatesettings()
     # if settings are read properly, imports everything and starts Main(controller)
-    if settingsinit == True:
-        core.SuiteReader()
-        #Main()
+    if settings_init == True:
+        suites_ok = core.readsuites()
+        if suites_ok == True:
+            Main()
+        if suites_ok == False:
+            print('Main: Something went wrong when loading suites')

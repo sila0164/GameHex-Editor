@@ -54,10 +54,11 @@ class Button:
         self.text = core.settings.text
 
 class Inputbox:
-    def __init__(self, parent, row, name, value, backgroundcolor):
+    def __init__(self, parent, row, name, value, typename, backgroundcolor):
         core.debug(f'InputBox: Creating "{name}" with value: {value}')
 
         self.name = name
+        self.type = typename
         
         self.main = ctk.CTkFrame(parent,
         fg_color=backgroundcolor, # creates the frame
@@ -107,9 +108,9 @@ class Inputbox:
         newval = self.input.get()
         if newval == '':
             return 0
-        if core.file and core.file.stat[self.name]['type'] == 'float':
+        if self.type == 'float':
             newval = float(newval)
-        else:
+        elif 'int' in self.type:
             newval = int(newval)
         core.debug(f'InputBox: Returning {newval}')
         return newval
@@ -118,7 +119,7 @@ class Inputbox:
         if typedvalue == "":
             return True
         try:
-            if core.file and core.file.stat[self.name]['type'] == 'float':
+            if self.type == 'float':
                 float(typedvalue)
             else:
                 int(typedvalue)

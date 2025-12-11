@@ -4,11 +4,20 @@ from localization import languages
 import os
 import sys
 import json
-
-
 #Should never import from anything other than languages
 
-file = None # This is where the currently opened file is saved and accessed
+typelengths = {
+    'int8': 1,
+    'int16': 2,
+    'int24': 3,
+    'int32': 4,
+    'int40': 5,
+    'int48': 6,
+    'int56': 7,
+    'int64': 8,
+    'float': 4,
+    'doublefloat': 8,
+}
 
 class File:
     def __init__(self, path: str):
@@ -30,49 +39,32 @@ class File:
 
     def __repr__(self): #all data contained in the class
         return f'Name: {self.name} \nId: {self.id}\nLength: {self.maxoffset}\n\nStats:\n{self.stat}\n\nFull bytes:\n{self.hex}'
-    
-    def hassupport(self):
-        #if self.extension in settings.supportedfiles: # Checks if file is supported
-        if self.extension == 'GR_WeaponDBEntry':
-            for index, name in enumerate(weapondb): # checks for confirmed support
-                id = weapondb[name]
-                if self.id == id:
-                    debug(f'File: Confirmed ID Found: {name} - {id}')
-                    return 'confirmed'
-            debug('File: Supported fileformat found')
-            return 'unknown' # returns that it is a known fileformat, but it isnt confirmed to be working
-        debug('File: Unsupported file')
-        return 'unsupported' # returns the file is unsupported
-    
-    def mount(self):
-        global current
-        current = self
-        debug(f'File: {self.name} mounted')
 
-    def readtype(self, typename: str, offset: int): #ADD Ability to use dictionary values 
-        if typename == 'float':
-            valuehex = self.hex[offset:offset+4]
+    def readtype(self, typename: str, offset: int):
+        typelength = typelengths[typename]
+        print(typelength)
+        endoffset = offset + typelength
+        valuehex = self.hex[offset:endoffset]
+        print(valuehex)
+        if 'float' in typename:
             valueread = struct.unpack('<f', valuehex)[0] #saves value as float
-        else: 
-            if typename == 'int8': # sets and saves the integer length for writing
-                length = 1
-            if typename == 'int16':
-                length = 2
-            if typename == 'int32':
-                length = 4
-            if typename == 'int64': 
-                length = 8
-            valuehex = self.hex[offset:offset+length]
+        if 'int' in typename:
             valueread = int.from_bytes(valuehex, byteorder='little') # saves the value as an integer
+        print(valueread)
         return valueread
 
-    def save(self, type: str, name: str, offset: int): # reads and saves a "stat" from a specific offset
+    def saveoffset(self, typename: str, name: str, offset: int, dict = None): # reads and saves a "stat" from a specific offset
         self.stat[name] = {} # the name of the stat (I think this might be rudundant)
-        self.stat[name]["type"] = type # saves the type for writing
+        self.stat[name]["typename"] = typename # saves the type for writing
         self.stat[name]["offset"] = offset # saves the offset, again for writing
-        self.stat[name]["value"] = self.readtype(type, offset) # reads value @ offset
+        self.stat[name]["value"] = self.readtype(typename, offset) # reads value @ offset
         self.stat[name]['write'] = 0 # set the write stat. this is changed to 1 if the value changes
-        print(f'File: New stat: {name}, {self.stat[name]['value']}, {type}, @ {offset}')
+        if dict != None:
+            self.stat[name]['dict'] = dict
+            self.stat[name]['dict_reverse'] = {v: k for k, v in dict.items()}
+            if self.stat[name]['value'] in self.stat[name]['dict_reverse'].items():
+                self.stat[name]['value'] = self.stat[name]['dict_reverse'][self.stat[name]['value']]
+        print(f'File: New stat: {name}, {self.stat[name]['value']}, {typename}, @ {offset}')
             
     def dictsearch(self, dict, typename, offset, cap=None):
         print(f'File: Searching from dict: For {typename}. From {dict}. Starting @ {offset}')
@@ -112,21 +104,14 @@ class File:
             for index, statname in enumerate(self.stat): # goes through all stats
                 stat = self.stat[statname]
                 if stat['write'] == 1: # Checks Write flag
-                    debug(f'File: Writing {stat['value']} @ {stat['offset']} as {stat['type']}')
+                    debug(f'File: Writing {stat['value']} @ {stat['offset']} as {stat['typename']}')
                     f.seek(stat['offset']) # finds the stats offset
-                    if stat['type'] == 'float': # if float use struct
+                    typelength = typelengths[stat['typename']]
+                    if stat['typename'] == 'float': # if float use struct
                         value = float(stat['value'])
                         data = struct.pack("<f", value)
                     else: # else use int_tobytes.
-                        if stat['type'] == 'int8': # sets and saves the integer length for writing
-                            length = 1
-                        if stat['type'] == 'int16':
-                            length = 2
-                        if stat['type'] == 'int32':
-                            length = 4
-                        if stat['type'] == 'int64': 
-                            length = 8
-                        data = int(stat['value']).to_bytes(length, byteorder="little")
+                        data = int(stat['value']).to_bytes(typelength, byteorder="little")
                     f.write(data) # writes the value to a given offset
                     stat['write'] = 0 # sets the write to 0 until it is changed again
                 else:
@@ -270,13 +255,13 @@ def initsettings() -> bool:
 #------------------------------------------------------------------------------------------
 # Everything after this is for translating and using the gh fileformats and scriptlanguage
 
-
+validtypes = ['int8', 'int16', 'int24', 'int32', 'int40', 'int48', 'int56', 'int64', 'float']
 
 def cleanmultientry(string: str, separator:str=',') -> list:
     """
     Docstring for cleanmultientry
     
-    :param string: Splits up strings at {separator} (if any) and removes ' ' and '.' from each entry.
+    :param string: Splits up strings at {separator} (if any), removes any '.' prefix and removes ' ' from each entry.
     :param separator: Defaults to ','. Defines what is used to separate each entry in the string
     :return: Returns each entry as a list. If only one is provided it still returns it as a list.
     :rtype: list[str]
@@ -288,7 +273,7 @@ def cleanmultientry(string: str, separator:str=',') -> list:
         stringamount = 0
         strings = [string,]
     while stringamount > -1:
-        strings[stringamount] = strings[stringamount].strip().replace('.', '')
+        strings[stringamount] = strings[stringamount].strip().removeprefix('.')
         stringamount -= 1 
     return strings
 
@@ -313,99 +298,169 @@ def readghl(path) -> dict:
             line = f.readline()
     return returndict
 
+
 class Suites: # Finished - ADD Ability to have multiple scripts for same filetype.
     def __init__(self):
         if settings == None:
             print('Suites: No Settings')
             return
-        self.suitesfolder = settings.suitesfolder
-        self.supportedextensions = {}
-        debug(f'Suites: Beginning read in {self.suitesfolder}')
-        for folder in os.listdir(self.suitesfolder):
-            path = os.path.join(self.suitesfolder, folder)
-            mainfile = os.path.join(path, 'main.ghx')
+        self.suites_folder = settings.suitesfolder
+        self.supported_extensions = {}
+        self.loadedscripts = []
+        debug(f'Suites: Beginning read in {self.suites_folder}')
+        for folder in os.listdir(self.suites_folder):
+            path = os.path.join(self.suites_folder, folder)
+            mainfile = os.path.join(path, 'main.ghl')
             debug(f'Suites: New suite: {path}')
             if os.path.exists(mainfile):
                 debug('Suites: sending to readmainfile')
                 self.readmainfile(path, mainfile)
             else:
-                debug('Suites: No main.ghx, skipping')
+                debug('Suites: No main.ghl, skipping')
             self.readwithoutmainfile(path)
-            debug(f'Suites: Read Suites in {path} as {self.supportedextensions}')
+            debug(f'Suites: Read Suites in {path} as {self.supported_extensions}')
 
     def readwithoutmainfile(self, path):
         for script in os.listdir(path):
-            if script.endswith('.ghx'):
+            if script.endswith('.gh') and script not in self.loadedscripts:
                 scriptpath = os.path.join(path, script)
-                fileformat = script.replace('.ghx', '')
-                if script not in self.supportedextensions.items():
-                    self.supportedextensions[fileformat] = scriptpath
+                fileformat = script.replace('.gh', '')
+                if script not in self.supported_extensions.items():
+                    self.supported_extensions[fileformat] = scriptpath
                     debug(f'Suites readwithoutmainfile: {fileformat} - {scriptpath}')
 
     def readmainfile(self, path, mainfile):
         scripts = readghl(mainfile)
         for fileformat, script in scripts.items():
-            if '.ghx' not in script:
-                script = '.'.join([script, 'ghx']) #Adds the suffix .ghx to the name of the script, if it isnt there   
+            if '.gh' not in script:
+                script = '.'.join([script, 'gh']) #Adds the suffix .gh to the name of the script, if it isnt there   
             scriptpath = os.path.join(path, script)
             if os.path.exists(scriptpath):
-                self.supportedextensions[fileformat] = scriptpath
+                self.supported_extensions[fileformat] = scriptpath
+                self.loadedscripts.append(script)
             else:
                 print(f'Suites readmainfile: {script} does not exist in folder, despite being referenced in main.ghx')
-                
-class Script: # Unfinished
-    def run(self, file: File, suites:Suites):
+
+suites = None
+
+def readsuites() -> bool:
+    global suites
+    try:
+        suites = Suites()
+        print('Suites: suites have been read')
+        return True
+    except Exception as e:
+        print(f'Suites: Could not read suites:\n{e}')
+        return False
+
+
+class Script: # Unfinished (WIP)
+    def __init__(self, file, suites):
         self.dependencies = {}
-        self.currentoffset = 0
-        script = suites.supportedextensions[file.extension]
-        linenum = 0
+        self.current_offset = 0
+        self.count_unnamed = {}
+        self.file = file
+        self.suites = suites.supported_extensions
+
+    def run(self) -> bool:
+        script = self.suites[self.file.extension]
+        line_number = 1
         with open(script) as f:
             line = f.readline()
             while line:
-                linelowercase = line.lower()
-                if linelowercase.startswith('@' or 'at') and 'read' in linelowercase:
+                line = line.strip()
+                if line == '':
+                    print('Script: skipping empty line')
+                    line_number += 1
+                    line = f.readline()
+                    continue
+                line_lowercase = line.lower()
+                debug(f'Script: line {line_number}: {line}')
+                if line_lowercase.startswith('@') and 'read' in line_lowercase:
                     self.readoffset(line)
-                elif linelowercase.startswith('@' or 'at') and 'search' in linelowercase:
-                    self.search(line)
-                elif linelowercase.startswith('@' or 'at'):
-                    self.moveoffset(line)
-                elif linelowercase.startswith('dependency:'):
+                #elif line_lowercase.startswith('@' or 'at') and 'search' in line_lowercase:
+                 #   self.search(line)
+                #elif line_lowercase.startswith('@' or 'at'):
+                 #   self.moveoffset(line)
+                elif line_lowercase.startswith('dependency:'):
                     self.readdependency(line, script)
                 else:
-                    print(f'ScriptRunner: Unknown command at line {linenum}')
-                linenum += 1
+                    print(f'Script: Unknown command at line {line_number}')
+                line_number += 1
                 line = f.readline()
+        return True
 
     def readoffset(self, line: str): #Unfinished ADD ability to read hex value and not just integers
         strings = cleanmultientry(line, separator=' ')
-        linelower = line.lower()
+        line_lower = line.lower()
 
-        if '@: ' or 'at: ' or '@ ' or 'at ' in linelower: # Sets the offset
+        debug(f'Script: readoffset: strings: {strings}')
+
+        if '@ ' or 'at ' in line_lower: # sets the offset to string #1 if @ had a space after it
             offset = strings[1].lower()
-        else:
-            offset = strings[0].lower().replace('@:' or 'at:', '')
-        if offset == '' or 'read' or None:
-            offset = self.currentoffset
-        else:
-            offset = int(offset)    
+            del strings[0:2]
 
-        checktoobject = False
-        if 'from' in linelower:
-            checktoobject = True
+        debug(f'Script: readoffset: after deleting 0, 1: {strings} offset: {offset}')        
+        # ADD Check for hex value and that it can be converted to integer.
+        if 'read' in offset: #If the offset is one of these it uses the general offset
+            offset = self.current_offset
+        elif '+' in offset: #If the offset strign contains '+' add it to self.currentoffset
+            self.current_offset = self.current_offset + int(offset)
+            offset = self.current_offset
+        elif '-' in offset:
+            self.current_offset = self.current_offset + int(offset)
+            offset = self.current_offset
+        else:
+            offset = int(offset)
 
+        debug(f'Script: readoffset: offset set to: {offset} - universal offset: {self.current_offset}')    
+        object_from_file = None
         for index, string in enumerate(strings):
-            stringlower = string.lower()
-            if stringlower == 'read' and checktoobject == False:
-                readtype = strings[index + 1].lower()
+            string_lower = string.lower()
+            # Read functions
+            if string_lower == 'read':
                 index += 1
-            else:
-                #getlist here
-            elif "'" or '"' in string:
-                name = string.replace('"' or "'", '')
+                if strings[index].lower() != 'list':
+                    read_type = strings[index].lower()
+                    debug(f'Script: stringcheck: type to read: {read_type}')
+                    continue
+                index += 1
+                object_to_use = strings[index].lower()
+                if object_to_use in self.dependencies:
+                    object_from_file = self.dependencies[object_to_use]
+                    read_type = object_from_file['TYPE']
+                    debug(f'Script: stringcheck: read from list: {read_type}')
+                    continue
+                else:
+                    print(f'"{object_to_use}" not found')
+            if read_type:
+                break
+        
+        if read_type not in validtypes:
+            print(f'"{read_type}" is not a valid type')
+        
+        namestring = None
+        name = None
+        if "'" in line:
+            namestring = line.split("'")
+        elif '"' in line:
+            namestring = line.split('"')
+        if namestring != None:
+            name = namestring[1]
+        if name == None or name == '':
+            if read_type not in self.count_unnamed:
+                self.count_unnamed[read_type] = 1
+            name = 'Unnamed' + ' ' + read_type + ' ' + str(self.count_unnamed[read_type])
+            self.count_unnamed[read_type] += 1
+        debug(f'Script: name set to: {name}')    
 
+        self.file.saveoffset(read_type, name, offset, dict=object_from_file)
+        
     def readdependency(self, line: str, path: str): # Finished
+        line = line.split(':')[1] #Removes the 'dependency:' prefix of the line.
         dependencies = cleanmultientry(line)
-        del dependencies[0] #Removes the 'dependency:' prefix of the line.
+        #del dependencies[0] 
+        debug(f'Script: readdependency listed dependencies: {dependencies}')
         for index, dependency in enumerate(dependencies):
             pathtosuitefolder, scriptfilename = os.path.split(path)
             if '.ghl' not in dependency:
@@ -416,9 +471,12 @@ class Script: # Unfinished
             if os.path.exists(dependencypath) == False:
                 dependencypath = os.path.join(resourcefolder, dependency)
             if os.path.exists(dependencypath) == False:
-                print(f'Script readdependency: {dependency} does not exist in folder, despite being referenced in {scriptfilename}')                 
-            else:
-                self.dependencies[dependency] = readghl(dependencypath)
+                print(f'Script: readdependency: {dependency} does not exist in folder, despite being referenced in {scriptfilename}')                 
+                continue
+            self.dependencies[dependency] = readghl(dependencypath)
+            if 'TYPE' not in self.dependencies[dependency]:
+                del self.dependencies[dependency]
+                print(f'Script: readdependency: {dependency} is missing "TYPE" definition')
             
         
 

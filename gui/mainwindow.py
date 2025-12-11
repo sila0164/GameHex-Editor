@@ -82,30 +82,29 @@ class StatDisplay: # The main data manipulation interface
         self.revertlastisactive = False
         self.revertoriginalisactive = False
     
-    def newfile(self, enablewrite): # saves the dictionary to itself
+    def newfile(self, enablewrite, file: core.File):
+        self.file = file
         self.rowcount = 0
         self.revert = {}
         self.originalvalue= {}
         self.lastvalue = {}
         self.revertcount = 0
         self.inputs = {} # keeps track of the inputboxes
-        if core.file:
-            for index, key in enumerate(core.file.stat): # creates an inputbox for each stat in the dictionary
-                self.main.rowconfigure(self.rowcount, weight=0) #Configures the row
-                value = core.file.stat[key]['value']
-                bgcolor = core.settings.accent
-                colorcalc = self.rowcount / 2
-                if colorcalc % 2 == 0: # Makes the backgroundcolor change for every other entry
-                    bgcolor = core.settings.darkaccent
-                self.inputs[key] = gui.Inputbox(self.main, self.rowcount, key, value, bgcolor)
-                self.inputs[key].valuegetupdates(enablewrite)
-                self.originalvalue[key] = value
-                self.lastvalue[key] = value
-                self.rowcount += 1 # Counts the row up 1
-                self.horsep = gui.Separator(self.main, self.rowcount, 0, 2, 'horizontal')
-                self.rowcount += 1
-        else:
-            print('Error: StatDisplay: Could not read files stat dictionary')
+        for index, key in enumerate(self.file.stat): # creates an inputbox for each stat in the dictionary
+            self.main.rowconfigure(self.rowcount, weight=0) #Configures the row
+            value = self.file.stat[key]['value']
+            typename = self.file.stat[key]['typename']
+            bgcolor = core.settings.accent
+            colorcalc = self.rowcount / 2
+            if colorcalc % 2 == 0: # Makes the backgroundcolor change for every other entry
+                bgcolor = core.settings.darkaccent
+            self.inputs[key] = gui.Inputbox(self.main, self.rowcount, key, value, typename, bgcolor)
+            self.inputs[key].valuegetupdates(enablewrite)
+            self.originalvalue[key] = value
+            self.lastvalue[key] = value
+            self.rowcount += 1 # Counts the row up 1
+            self.horsep = gui.Separator(self.main, self.rowcount, 0, 2, 'horizontal')
+            self.rowcount += 1
 
     def updaterevert(self, statname):
         newval = self.inputs[statname].getvalue()
@@ -158,9 +157,9 @@ class StatDisplay: # The main data manipulation interface
         try:
             for index, input in enumerate(self.inputs):
                 newvalue = self.inputs[input].getvalue()
-                if core.file and core.file.stat[input]['value'] != newvalue:
-                    core.debug(f'StatDisplay: Sending {input} to write. {core.file.stat[input]['value']} -> {newvalue}')
-                    core.file.changevalue(input, newvalue)
+                if self.file and self.file.stat[input]['value'] != newvalue:
+                    core.debug(f'StatDisplay: Sending {input} to write. {self.file.stat[input]['value']} -> {newvalue}')
+                    self.file.changevalue(input, newvalue)
             return True
         except Exception as e:
             core.debug(f'StatDisplay: Error: {e}')
