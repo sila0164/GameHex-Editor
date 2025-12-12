@@ -19,6 +19,18 @@ typelengths = {
     'doublefloat': 8,
 }
 
+validtypes = [
+    'int8', 
+    'int16', 
+    'int24', 
+    'int32', 
+    'int40', 
+    'int48', 
+    'int56', 
+    'int64', 
+    'float',
+]
+
 class File:
     def __init__(self, path: str):
         import os
@@ -255,7 +267,6 @@ def initsettings() -> bool:
 #------------------------------------------------------------------------------------------
 # Everything after this is for translating and using the gh fileformats and scriptlanguage
 
-validtypes = ['int8', 'int16', 'int24', 'int32', 'int40', 'int48', 'int56', 'int64', 'float']
 
 def cleanmultientry(string: str, separator:str=',') -> list:
     """
@@ -277,13 +288,13 @@ def cleanmultientry(string: str, separator:str=',') -> list:
         stringamount -= 1 
     return strings
 
-def readghl(path) -> dict:
+def readlist(path) -> dict:
     """
-    Docstring for readghl
+    Docstring for readlist
     
-    :param path: The ghl filepath of the list needed to be loaded
-    :return: returns the ghl's list as a dictionary
-    :rtype: dict[string(if multiple, each one becomes an entry), string or int]
+    :param path: The filepath of the list needed to be loaded
+    :return: returns the list as a dictionary
+    :rtype: dict[string, string or int]
     """
     returndict = {}
     with open(path) as f:
@@ -330,7 +341,7 @@ class Suites: # Finished - ADD Ability to have multiple scripts for same filetyp
                     debug(f'Suites readwithoutmainfile: {fileformat} - {scriptpath}')
 
     def readmainfile(self, path, mainfile):
-        scripts = readghl(mainfile)
+        scripts = readlist(mainfile)
         for fileformat, script in scripts.items():
             if '.gh' not in script:
                 script = '.'.join([script, 'gh']) #Adds the suffix .gh to the name of the script, if it isnt there   
@@ -353,6 +364,27 @@ def readsuites() -> bool:
         print(f'Suites: Could not read suites:\n{e}')
         return False
 
+def cleanline(line) -> tuple[str, list]:
+    """
+    Docstring for cleanline
+    
+    :param line: The string to be filtered for '"' or "'"
+    :return: returns the name within ' or " and the surrounding text with each word as an entry in a list
+    :rtype: tuple[name in "", the words - with name removed - in lower case, with each word as an entry in the list]
+    """
+    if '"' in line:
+        split_line = line.split('"')
+    elif "'" in line:
+        split_line = line.split("'")
+    else:
+        name = ''
+    name = str(split_line[1])
+
+    line_no_name_with_caps = str(split_line[0] + split_line[2])
+    line_no_name_lower_case = line_no_name_with_caps.lower()
+    clean_line = line_no_name_lower_case.split(' ')
+    
+    return name, clean_line
 
 class Script: # Unfinished (WIP)
     def __init__(self, file, suites):
@@ -362,82 +394,98 @@ class Script: # Unfinished (WIP)
         self.file = file
         self.suites = suites.supported_extensions
 
-    def run(self) -> bool:
+    def run(self) -> tuple[bool, str]:
         script = self.suites[self.file.extension]
         line_number = 1
         with open(script) as f:
             line = f.readline()
+            line = f.readline() # Skips the first line as that is only neede for the suite read.
             while line:
                 line = line.strip()
-                if line == '':
+                if '#' in line:
+                    line = line.split('#')[0] # Allaws for comments with # in lines, ignores everything after '#'
+                if line == '':# Ignores empty lines
                     print('Script: skipping empty line')
                     line_number += 1
                     line = f.readline()
                     continue
-                line_lowercase = line.lower()
-                debug(f'Script: line {line_number}: {line}')
-                if line_lowercase.startswith('@') and 'read' in line_lowercase:
-                    self.readoffset(line)
-                #elif line_lowercase.startswith('@' or 'at') and 'search' in line_lowercase:
+                
+                ui_name, clean_line = cleanline(line) # This splits the name from the rest of the line and makes the line lower case
+                debug(f'Script: line {line_number}: {clean_line}')
+                debug(f'Script: name: {ui_name}')
+                
+                offset = None
+                if line[0] == '@': # Check for @ at the beginning of line
+                    succes, offset, clean_line_no_offset = self.readoffset(clean_line)
+                    if succes == False:
+                        print(f'Script: offset: {offset} - ERROR: {clean_line_no_offset[0]}')
+                        return False, clean_line_no_offset[0]
+                    debug(f'Script: offset: {offset}')
+                elif line.startswith('dependency'):
+                    self.readdependency(line, script)
+                    line_number += 1
+                    line = f.readline()
+                    continue
+                #elif line.startswith('segment'):
+                
+                if not isinstance(offset, int) or offset == -1:
+                    print(f'Script: Invalid offset value or syntax @ line {line_number}')
+                #if 'search' in line:
                  #   self.search(line)
                 #elif line_lowercase.startswith('@' or 'at'):
                  #   self.moveoffset(line)
-                elif line_lowercase.startswith('dependency:'):
-                    self.readdependency(line, script)
-                else:
-                    print(f'Script: Unknown command at line {line_number}')
+                
+                    
                 line_number += 1
                 line = f.readline()
         return True
 
-    def readoffset(self, line: str): #Unfinished ADD ability to read hex value and not just integers
-        strings = cleanmultientry(line, separator=' ')
-        line_lower = line.lower()
+    def readoffset(self, line: list) -> tuple[bool, int, list]: #Unfinished ADD ability to read hex value and not just integers
 
-        debug(f'Script: readoffset: strings: {strings}')
-
-        if '@ ' or 'at ' in line_lower: # sets the offset to string #1 if @ had a space after it
-            offset = strings[1].lower()
-            del strings[0:2]
-
-        debug(f'Script: readoffset: after deleting 0, 1: {strings} offset: {offset}')        
+        if line[0] == '@':
+            offset = line[1].lower()
+        else:
+            line[0] = 'Syntax error at "@", check that there is a space after "@"'
+            return False, -1, line
+     
         # ADD Check for hex value and that it can be converted to integer.
         if 'read' in offset: #If the offset is one of these it uses the general offset
             offset = self.current_offset
-        elif '+' in offset: #If the offset strign contains '+' add it to self.currentoffset
+            del strings[0]
+        elif '+' in offset or '-' in offset: #If the offset string contains '+' or '-' add it to self.currentoffset
             self.current_offset = self.current_offset + int(offset)
             offset = self.current_offset
-        elif '-' in offset:
-            self.current_offset = self.current_offset + int(offset)
-            offset = self.current_offset
+            del strings[0:2]
         else:
-            offset = int(offset)
-
+            offset = int(offset) 
+            del strings[0:2]
+        debug(f'Script: readoffset: after deleting 0, 1: {strings} offset: {offset}') 
         debug(f'Script: readoffset: offset set to: {offset} - universal offset: {self.current_offset}')    
-        object_from_file = None
-        for index, string in enumerate(strings):
-            string_lower = string.lower()
-            # Read functions
-            if string_lower == 'read':
-                index += 1
-                if strings[index].lower() != 'list':
-                    read_type = strings[index].lower()
-                    debug(f'Script: stringcheck: type to read: {read_type}')
-                    continue
-                index += 1
-                object_to_use = strings[index].lower()
-                if object_to_use in self.dependencies:
-                    object_from_file = self.dependencies[object_to_use]
-                    read_type = object_from_file['TYPE']
-                    debug(f'Script: stringcheck: read from list: {read_type}')
-                    continue
-                else:
-                    print(f'"{object_to_use}" not found')
-            if read_type:
-                break
+        if strings:
+            object_from_file = None
+            for index, string in enumerate(strings):
+                string_lower = string.lower()
+                # Read functions
+                if string_lower == 'read':
+                    index += 1
+                    if strings[index].lower() != 'list':
+                        read_type = strings[index].lower()
+                        debug(f'Script: stringcheck: type to read: {read_type}')
+                        continue
+                    index += 1
+                    object_to_use = strings[index].lower()
+                    if object_to_use in self.dependencies:
+                        object_from_file = self.dependencies[object_to_use]
+                        read_type = object_from_file['TYPE']
+                        debug(f'Script: stringcheck: read from list: {read_type}')
+                        continue
+                    else:
+                        print(f'"{object_to_use}" not found')
+                if read_type:
+                    break
         
-        if read_type not in validtypes:
-            print(f'"{read_type}" is not a valid type')
+            if read_type not in validtypes:
+                print(f'"{read_type}" is not a valid type')
         
         namestring = None
         name = None

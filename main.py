@@ -75,8 +75,9 @@ class Main:
         continueload = False
         if tempfile.extension in core.suites.supported_extensions:
             print('Main: Support check: Fileextension Support')
-            popup = Popup(7, 8, root=self.root)
-            continueload = popup.buttonsbool(9,10)
+            #popup = Popup(7, 8, root=self.root)
+            #continueload = popup.buttonsbool(9,10)
+            continueload = True
         else:
             print('Main: Support check: Unsupported')
             popup = Popup(11, 14, root=self.root)
@@ -181,9 +182,13 @@ class Main:
 
     def exitprogram(self):
         print('Main: Exiting program')
-        self.window.exit()
+        savefilereminder = True
+        if self.filehasbeenedited == True:
+            print('Main: Unwritten changes, opening prompt')
+            savefilereminder = self.filealreadyopencheck() # prompts the user if they want to save first. Gets False if they cancel
+        if savefilereminder == True:
+            self.window.exit()
         
-
 if __name__ == '__main__': 
     settings_init = core.initsettings()
     if settings_init == False: # stops the program if settings couldnt be set
