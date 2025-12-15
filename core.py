@@ -1,5 +1,4 @@
 import struct
-from db.weapondb import weapondb
 from localization import languages
 import os
 import sys
@@ -66,13 +65,13 @@ class File:
         self.stat[name]["offset"] = offset # saves the offset, again for writing
         self.stat[name]["value"] = self.readtype(typename, offset) # reads value @ offset
         self.stat[name]['write'] = 0 # set the write stat. this is changed to 1 if the value changes
+        self.stat[name]['dict'] = dict
         if dict != None:
-            self.stat[name]['dict'] = dict
-            self.stat[name]['dict_reverse'] = {v: k for k, v in dict.items()}
-            if self.stat[name]['value'] in self.stat[name]['dict_reverse'].items():
-                self.stat[name]['value'] = self.stat[name]['dict_reverse'][self.stat[name]['value']]
-            else:
-                self.stat[name]['value'] = 'Unknown'
+            del self.stat[name]['dict']['TYPE']
+            self.stat[name]['dict_reverse'] = {v: k for k, v in self.stat[name]['dict'].items()}
+            if not self.stat[name]['value'] in self.stat[name]['dict_reverse'].items(): # If the value is not on the list, add it as 'Unknown'
+                self.stat[name]['dict']['Unknown'] = str(self.stat[name]['value'])
+                self.stat[name]['dict_reverse'] = {v: k for k, v in self.stat[name]['dict'].items()}
         print(f'File: New stat: {name}, {self.stat[name]['value']}, {typename}, @ {offset}')
             
     def dictsearch(self, dict, typename, offset, cap=None):
@@ -442,7 +441,7 @@ class Script: # Unfinished (WIP)
                         if succes == False:
                             return False, message
                         debug(message)
-                    if 'search' in line:
+                    elif 'search' in line:
                         pass # Unfinished
                     else:
                         self.current_offset = offset

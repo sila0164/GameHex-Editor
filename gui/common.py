@@ -85,13 +85,16 @@ class Inputbox:
                                   fg_color=backgroundcolor,
                                   text_color=core.settings.text,
                                   border_color=core.settings.border,
-                                  width=100,
+                                  width=200,
                                   height=15,
                                   )
         self.input.grid(column=2, row=0, sticky='E', padx=4, pady=1)
-        
+    
     def valuegetupdates(self, enablewrite):
         self.trace = self.value.trace_add('write', enablewrite)
+
+    def valueset(self, oldvalue):
+        self.value.set(oldvalue)
 
     def toggle(self):
         if self.input._state == 'normal':
@@ -136,7 +139,74 @@ class Separator:
             self.main = ctk.CTkFrame(parent, width=2, fg_color=core.settings.border)
             self.main.grid(row=row, column=column, rowspan=span, sticky='NS')
             
+class Dropdown:
+    def __init__(self, parent, row, name, value, typename, dictionary, reverse_dictionary, backgroundcolor):
+        core.debug(f'Dropdown: Creating "{name}" with value: {value}')
 
+        self.name = name
+        self.type = typename
+        self.values = list(dictionary.keys())
+        self.value = tk.StringVar(name=self.name, value=reverse_dictionary[str(value)])
+        self.dictionary = dictionary
+        self.reverse_dictionary = reverse_dictionary
+        
+        self.main = ctk.CTkFrame(parent,
+        fg_color=backgroundcolor, # creates the frame
+        corner_radius=0)
+
+        self.main.grid(column=0, row=row, sticky='NSEW') # places it in the parent
+
+        self.main.columnconfigure(0, weight=0)
+        self.main.columnconfigure(1, weight=1)
+        self.main.columnconfigure(2, weight=0)
+
+        self.title = ctk.CTkLabel(self.main, text_color=core.settings.text, fg_color=backgroundcolor,
+            text=name)
+        self.title.grid(column=0, row=0, sticky='W', padx=4, pady=1)
+        
+        self.input = ctk.CTkComboBox(self.main, variable=self.value,
+                                  values=self.values,
+                                  fg_color=backgroundcolor,
+                                  text_color=core.settings.text,
+                                  border_color=core.settings.border,
+                                  width=200,
+                                  height=15,
+                                  )
+        self.input.grid(column=2, row=0, sticky='E', padx=4, pady=1)
+    
+    def valuegetupdates(self, enablewrite):
+        self.trace = self.value.trace_add('write', enablewrite)
+
+    def valueset(self, oldvalue):
+        print(self.reverse_dictionary)
+        self.value.set(self.reverse_dictionary[str(oldvalue)])
+
+    def toggle(self):
+        if self.input._state == 'normal':
+            self.input.configure(state='disabled')
+        else:
+            self.input.configure(state='normal')
+
+    def clear(self):
+        core.debug(f'Dropdown: Destroying {self.name}')
+        self.value.trace_remove('write', self.trace)
+        self.main.destroy()
+
+    def getvalue(self):
+        input = self.input.get()
+        if input == '':
+            return None
+        print(input)
+        newval = self.dictionary[input]
+        print(newval)
+        if newval == '':
+            return 0
+        if self.type == 'float':
+            newval = float(newval)
+        elif 'int' in self.type:
+            newval = int(newval)
+        core.debug(f'Dropdown: Returning {newval}')
+        return newval
 
 
 

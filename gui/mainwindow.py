@@ -9,7 +9,7 @@ class MainWindow:# The main window that contains everything
         # Creates itself
         self.root = ctk.CTk()
         self.root.title(core.settings.language[12])
-        self.root.geometry("450x600")
+        self.root.geometry("550x600")
         self.main = ctk.CTkFrame(self.root, fg_color=core.settings.background)
         self.root.grid_rowconfigure(0, weight=1)
         self.root.grid_columnconfigure(0, weight=1)
@@ -88,6 +88,7 @@ class StatDisplay: # The main data manipulation interface
         self.revert = {}
         self.originalvalue= {}
         self.lastvalue = {}
+        self.separators = {}
         self.revertcount = 0
         self.inputs = {} # keeps track of the inputboxes
         for index, key in enumerate(self.file.stat): # creates an inputbox for each stat in the dictionary
@@ -98,17 +99,22 @@ class StatDisplay: # The main data manipulation interface
             colorcalc = self.rowcount / 2
             if colorcalc % 2 == 0: # Makes the backgroundcolor change for every other entry
                 bgcolor = core.settings.darkaccent
-            self.inputs[key] = gui.Inputbox(self.main, self.rowcount, key, value, typename, bgcolor)
+            if self.file.stat[key]['dict'] != None:
+                dictionary = self.file.stat[key]['dict']
+                reverse_dictionary = self.file.stat[key]['dict_reverse']
+                self.inputs[key] = gui.Dropdown(self.main, self.rowcount, key, value, typename, dictionary, reverse_dictionary, backgroundcolor=bgcolor)
+            else:
+                self.inputs[key] = gui.Inputbox(self.main, self.rowcount, key, value, typename, bgcolor)
             self.inputs[key].valuegetupdates(enablewrite)
             self.originalvalue[key] = value
             self.lastvalue[key] = value
             self.rowcount += 1 # Counts the row up 1
-            self.horsep = gui.Separator(self.main, self.rowcount, 0, 2, 'horizontal')
+            self.separators[self.rowcount] = gui.Separator(self.main, self.rowcount, 0, 2, 'horizontal')
             self.rowcount += 1
 
     def updaterevert(self, statname):
         newval = self.inputs[statname].getvalue()
-        if self.revertlastisactive == True: # To stop it updating and ruining the revertcount order, when reverting.
+        if self.revertlastisactive == True or newval == None: # To stop it updating and ruining the revertcount order, when reverting. Or if the input returns None(Dropdown does but updates twice)
             return
         if self.revertoriginalisactive == False:
             duplicatecheck = self.revertcount - 1
@@ -129,7 +135,7 @@ class StatDisplay: # The main data manipulation interface
         numberinlist = self.revertcount - 1
         inputname = self.revert[str(numberinlist)]['name']
         inputoldvalue = self.revert[str(numberinlist)]['value']
-        self.inputs[inputname].value.set(inputoldvalue)
+        self.inputs[inputname].valueset(inputoldvalue)
         del self.revert[str(numberinlist)]
         self.revertcount -= 1
         self.revertlastisactive = False
@@ -152,6 +158,8 @@ class StatDisplay: # The main data manipulation interface
     def clear(self):
         for index, input in enumerate(self.inputs):
             self.inputs[input].clear()
+        for index, sep in enumerate(self.separators):
+            self.separators[sep].main.destroy()
 
     def sendnewvaluestofile(self):
         try:

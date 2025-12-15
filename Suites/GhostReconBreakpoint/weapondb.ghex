@@ -6,12 +6,12 @@ File: GR_WeaponDBEntry, .deasdsda               # This is needed on the first li
 @ -30                                           # This moves the offset back 30 (so 50 - 30)
 @ +20                                           # This moves the offset forward 20 (so 20 + 20)
 
-@ 14 read int16 'Rate Of Fire'                  # This ignores the current offset and sets the value at the given offset. Even though the offset is 40 currently this gets set at 14. The offset is not changed.
-"Projectile Breaking Angle" @ +16 read float    # This adds 16 to the offset and reads the value there.
+@ 14 read int16 'Rate Of Fire'                  # This reads the value at offset 14. the offset has been moved to here now.
+"Projectile Breaking Angle" @ +42 read float    # This adds 42 to the offset and reads the value there.
                                                 # Anything in '' or "" Is used as the UI Name of the value/offset. Can be added anywhere on the line
 @ read int40                                    # Reads from the offset without moving it.
 @ -20 read int24 ''                             # This works like the above, it removes the given value from the offset
 @ 40 read int40                                 # If no name is given it will be named 'type x', type being 'int40' and x being '1' as there no other int40's in the file so far.
 @ 50 read int40                                 # This would be 'int40 2' in the ui
 
-#@ +300 read ammotypes 'Ammo Type'              # This looks for the value in a list. Creates a dropdown with the name in ''. The Type is defined in the list.
+@ +300 read ammotypes 'Ammo Type'              # This looks for the value in a list. Creates a dropdown with the name in ''. The Type is defined in the list.
