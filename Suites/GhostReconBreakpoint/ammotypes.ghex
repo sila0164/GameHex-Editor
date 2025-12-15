@@ -1,5 +1,7 @@
-TYPE: int64
-5,56x45mm: 1863346880522
+List: ammotypes # This is needed for the program to understand that it is a list. 'list:' is the descriptor, whatever comes after is the name you then use for referring to it in a script.
+TYPE: int64 # This is also needed to define what type the value is in.
+
+5,56x45mm: 1863346880522 # Each entry should be like this, with the name you want in the ui first with a ':' to separate, then the value this name should represent in a dropdown.
 7,62x51mm: 1863346882035
 9x19mm SMG: 1863346882157
 .45 ACP SMG: 1863346882237

@@ -1,7 +1,0 @@
-Dependency: ammotypes.ghl, spreadpatterns,recoilpatterns
-
-@ 14 read int16 'Rate Of Fire'
-@ 56 read float "Projectile Breaking Angle"
-@ 200 read int40
-@ -20 read int24 ''
-@ 40 read int40 
