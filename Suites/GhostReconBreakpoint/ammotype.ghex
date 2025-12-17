@@ -1,1 +1,4 @@
-file:DB_Ammotype
+file:DB_Ammotype, 1_-_5,7_pistol.DBXPAction, # Add more here
+
+@ 34 read int16 'Ammo on load'
+@ 56 read int16 'Max Ammo

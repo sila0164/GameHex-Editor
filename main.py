@@ -73,7 +73,7 @@ class Main:
     
     def supportcheck(self, tempfile):
         continueload = False
-        if tempfile.extension in core.suites.supported_extensions:
+        if tempfile.extension in core.suites.supported_extensions or tempfile.fullname in core.suites.supported_extensions:
             print('Main: Support check: Fileextension Support')
             #popup = Popup(7, 8, root=self.root)
             #continueload = popup.buttonsbool(9,10)

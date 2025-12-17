@@ -136,6 +136,7 @@ class StatDisplay: # The main data manipulation interface
         inputname = self.revert[str(numberinlist)]['name']
         inputoldvalue = self.revert[str(numberinlist)]['value']
         self.inputs[inputname].valueset(inputoldvalue)
+        self.lastvalue[inputname] = inputoldvalue
         del self.revert[str(numberinlist)]
         self.revertcount -= 1
         self.revertlastisactive = False

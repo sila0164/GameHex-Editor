@@ -37,7 +37,6 @@ class File:
         # reads file as bytes
         with open(path, 'rb+') as f:
             self.hex = f.read()
-
         self.maxoffset = len(self.hex) # the amount of bytes in file
         self.fullname = os.path.basename(path) # the actual filename (needed to find searchpattern)
         # splits the extension. In case a user wants to run the searchpattern on a file that is "unknown"
@@ -67,38 +66,55 @@ class File:
         self.stat[name]['write'] = 0 # set the write stat. this is changed to 1 if the value changes
         self.stat[name]['dict'] = dict
         if dict != None:
+            self.stat[name]['dict'] = dict.copy()
             del self.stat[name]['dict']['TYPE']
             self.stat[name]['dict_reverse'] = {v: k for k, v in self.stat[name]['dict'].items()}
-            if not self.stat[name]['value'] in self.stat[name]['dict_reverse'].items(): # If the value is not on the list, add it as 'Unknown'
+            if not str(self.stat[name]['value']) in self.stat[name]['dict_reverse']: # If the value is not on the list, add it as 'Unknown'
                 self.stat[name]['dict']['Unknown'] = str(self.stat[name]['value'])
                 self.stat[name]['dict_reverse'] = {v: k for k, v in self.stat[name]['dict'].items()}
-        print(f'File: New stat: {name}, {self.stat[name]['value']}, {typename}, @ {offset}')
+        debug(f'File: New stat: {name}, {self.stat[name]['value']}, {typename}, @ {offset}')
             
-    def dictsearch(self, dict, typename, offset, cap=None):
-        print(f'File: Searching from dict: For {typename}. From {dict}. Starting @ {offset}')
+    def dictsearch(self, dict, typename, offset, backwards:bool, cap=None) -> int:
+        debug(f'File: Searching from dict: For {typename}. From {dict}. Starting @ {offset}')
         if cap == None:
             cap = self.maxoffset
+        else:
+            cap = offset + cap
+        tempdict = dict.copy()
+        del tempdict['TYPE']
+        dict_reverse = {v: k for k, v in dict.items()}
         searchoffset = offset
+        search_direction = 1
+        if backwards == True:
+            search_direction = -1
         while cap > searchoffset:
             search = self.readtype(typename, searchoffset)
-            if search in dict.id.items():
-                print(f"File: Found {search} @ {offset}")
+            if str(search) in dict_reverse:
+                debug(f"File: Found {search} @ {offset}")
+                del tempdict
                 return searchoffset
-            searchoffset += 1
-        print(f"File: Failed to find {dict}: Reached {cap}")
+            searchoffset += search_direction
+        debug(f"File: Failed to find {dict}: Reached {cap}")
+        del tempdict
+        return 0
 
-    def intsearch(self, searchstring: int, typename: str, fromoffset: int, cap=None):
-        print(f"File: Searching for {searchstring} as {typename} from {fromoffset}")
+    def intsearch(self, searchstrings: list, typename: str, fromoffset: int, backwards:bool, cap=None) -> int:
+        debug(f"File: Searching for {searchstrings} as {typename} from {fromoffset}")
         searchoffset = fromoffset
+        search_direction = 1
+        if backwards == True:
+            search_direction = -1
         if cap == None:
             cap = self.maxoffset
+        else:
+            cap = fromoffset + cap
         while cap > searchoffset: 
             search = self.readtype(typename, searchoffset)
-            if search == searchstring:
-                print(f"File: Found @ {searchoffset}")
+            if str(search) in searchstrings:
+                debug(f"File: Found @ {searchoffset}")
                 return searchoffset
-            searchoffset += 1
-        print(f"File: Failed to find {searchstring}: Reached {cap}")
+            searchoffset += search_direction
+        debug(f"File: Failed to find {searchstrings}: Reached {cap}")
         return 0
 
     def changevalue(self, name:str, value): # changes current value for a stat which will be written if wanted
@@ -298,7 +314,7 @@ def cleanmultientry(string: str, separator:str=',') -> list:
     """
     Docstring for cleanmultientry
     
-    :param string: Splits up strings at {separator} (if any), removes any '.' prefix and removes ' ' from each entry.
+    :param string: Splits up strings at {separator} (if any), removes any '.' prefix and removes ' ' from each entry. Removes any empty strings.
     :param separator: Defaults to ','. Defines what is used to separate each entry in the string
     :return: Returns each entry as a list. If only one is provided it still returns it as a list.
     :rtype: list[str]
@@ -311,6 +327,8 @@ def cleanmultientry(string: str, separator:str=',') -> list:
         strings = [string,]
     while stringamount > -1:
         strings[stringamount] = strings[stringamount].strip().removeprefix('.')
+        if strings[stringamount] == '':
+            del strings[stringamount] 
         stringamount -= 1 
     return strings
 
@@ -407,57 +425,60 @@ class Script: # Unfinished (WIP)
         self.lists = suites.loadedlists
 
     def run(self) -> tuple[bool, str]:
-        script = self.suites[self.file.extension]
+        if self.file.fullname in self.suites:
+            script = self.suites[self.file.fullname]
+            debug(f'Script: Running from filename: {self.file.fullname}')
+        else:
+            script = self.suites[self.file.extension]
+            debug(f'Script: Running from extension: {self.file.extension}')
         debug(script)
         line_number = 1
         with open(script) as f:
             line = f.readline()
             debug(line)
             line = f.readline() # Skips the first line as that is only needed for the suite read.
-            debug(line)
             while line:
                 debug(line)
                 line = cleanline(line)
-                debug(f'Script: Line after clean: {line}')
                 if line == '':# Ignores empty lines
-                    print('Script: skipping empty line')
+                    debug('Script: skipping empty line')
                     line_number += 1
                     line = f.readline()
                     continue
                 ui_name, line = getname(line) # This splits the name from the rest of the line and makes the line lower case. Removes comments.
                 #ADD - Namecheck for duplicates here?
-                line = cleanline(line)
                 debug(f'Script: line {line_number}: {line}')
                 debug(f'Script: name: {ui_name}')
-                line_as_list = line.lower().split() # splits the line into a list for easier reading
+                line_as_list = line.lower().split(' ') # splits the line into a list for easier reading
                 offset = None
                 if line[0] == '@': # Check for @ at the beginning of line
-                    succes, offset, message = self.readoffset(line_as_list)
+                    succes, offset, message = self.readoffset(line_as_list) # Read the offset and move it
                     if succes == False:
                         return False, message
                     debug(message)
-                    if 'read' in line:
+                    if 'read' in line and 'search' not in line: # If it is read only
                         succes, message = self.readvalue(offset, line_as_list, ui_name)
                         if succes == False:
                             return False, message
                         debug(message)
-                    elif 'search' in line:
-                        pass # Unfinished
-                    else:
+                    elif 'search' in line and 'read' not in line: # If it is search only
+                        succes, message = self.search(offset, line_as_list, line)
+                        if succes == False:
+                            return False, message
+                        debug(message)
+                    elif 'search' in line and 'read' in line: # If it is both search and read
+                        succes, message = self.search(offset, line_as_list, line)
+                        if succes == False:
+                            return False, message
+                        debug(message)
+                        succes, message = self.readvalue(self.current_offset, line_as_list, ui_name)
+                        if succes == False:
+                            return False, message
+                        debug(message)
+                    else: # If no command is given it just moves the offset
                         self.current_offset = offset
                         debug(f'Script: Moved offset to {self.current_offset}')
-                    line_number += 1
-                elif line.startswith('dependency'):
-                    self.readdependency(line, script)
-                    line_number += 1
-                    line = f.readline()
-                    continue
                 #elif line.startswith('segment'):
-                
-                if not isinstance(offset, int) or offset == -1:
-                    print(f'Script: Invalid offset value or syntax - line {line_number}')
-                    return False, f'Invalid offset value or syntax - line {line_number}'
-                
                     
                 line_number += 1
                 line = f.readline()
@@ -471,7 +492,7 @@ class Script: # Unfinished (WIP)
             return False, -1, 'Syntax error at "@", check that there is a space after "@"'
      
         # ADD Check for hex value and that it can be converted to integer.
-        if 'read' in offset: #If the offset is read it uses the general offset
+        if 'read' in offset or 'search' in offset: #If the offset is read it uses the general offset
             offset = self.current_offset
             del line[0]
         elif '+' in offset or '-' in offset: #If the offset string contains '+' or '-' add it to self.currentoffset
@@ -481,6 +502,7 @@ class Script: # Unfinished (WIP)
         else:
             try:
                 offset = int(offset) 
+                self.current_offset = offset
                 del line[0:2]
             except:
                 return False, -1, 'Offset value is not an integer. check that there is a space after "@" and that the value is a valid integer.'
@@ -499,7 +521,7 @@ class Script: # Unfinished (WIP)
             try:
                 read_type = list_from_file['TYPE']
             except:
-                print(f'Script: readvalue: List {read_type} is missing TYPE definition')
+                print(f'Script: readvalue: List {read_type} is missing TYPE definition\n{list_from_file}')
                 return False, 'List is missing TYPE definition'
         else:
             print(f'Script: readvalue: "{read_type}" is not a valid type or list')
@@ -513,28 +535,54 @@ class Script: # Unfinished (WIP)
         self.file.saveoffset(read_type, ui_name, offset, dict=list_from_file)
         return True, f'Read {read_type} @ {offset} as {ui_name}'
 
-    def readdependency(self, line: str, path: str): # Finished
-        line = line.split(':')[1] #Removes the 'dependency:' prefix of the line.
-        dependencies = cleanmultientry(line)
-        #del dependencies[0] 
-        debug(f'Script: readdependency listed dependencies: {dependencies}')
-        for index, dependency in enumerate(dependencies):
-            pathtosuitefolder, scriptfilename = os.path.split(path)
-            if '.ghl' not in dependency:
-                dependency = '.'.join([dependency, 'ghl'])   
-            dependencypath = os.path.join(pathtosuitefolder, dependency)
-            debug(f'Script: readdependency: Dependency: {dependency} path: {dependencypath}')
-            resourcefolder = os.path.join(pathtosuitefolder, 'Resources')
-            if os.path.exists(dependencypath) == False:
-                dependencypath = os.path.join(resourcefolder, dependency)
-            if os.path.exists(dependencypath) == False:
-                print(f'Script: readdependency: {dependency} does not exist in folder, despite being referenced in {scriptfilename}')                 
-                continue
-            self.dependencies[dependency] = readlist(dependencypath)
-            if 'TYPE' not in self.dependencies[dependency]:
-                del self.dependencies[dependency]
-                print(f'Script: readdependency: {dependency} is missing "TYPE" definition')
-            
+    def search(self, offset: int, line_as_list: list, line: str) -> tuple[bool, str]:
+        backwards = False
+        if '-search' in line_as_list:
+            searchindex = line_as_list.index('-search')
+            backwards = True
+        elif 'search' in line_as_list:
+            searchindex = line_as_list.index('search')
+        search_type = line_as_list[searchindex + 1]
+        search_value = cleanmultientry(line)
+        # To support searching for multiple values, and allow free placement of search on a line, the below removes any text before and after the values.
+        search_value[0] = line_as_list[searchindex + 2].replace(',', '')
+        search_value[-1] = search_value[-1].split(' ')[0]
+        #In case cap has been specified
+        cap = None
+        if 'cap' in line:
+            capindex = line_as_list.index('cap')
+            try:
+                cap = int(line_as_list[capindex + 1])
+            except:
+                if capindex + 1 in line_as_list:
+                    return False, f'Invalid cap value: {line_as_list[capindex+1]}'
+                return False, 'No cap value given.'
+        debug(f'Script: Type to Search: {search_type}\nSearchvalue(s): {search_value}')
+        #much like the readvalue function, but searches for values instead.
+        list_from_file = None
+        if search_type in validtypes:
+            debug(f'Script: Search: type to search: {search_type}')
+            new_offset = self.file.intsearch(search_value, search_type, offset, backwards=backwards, cap=cap)
+        elif search_type in self.lists:
+            list_from_file = self.lists[search_type]
+            try:
+                search_type = list_from_file['TYPE']
+                new_offset = self.file.dictsearch(list_from_file, search_type, offset, backwards=backwards, cap=cap)
+            except:
+                print(f'Script: search: List "{search_type}" is missing TYPE definition\n{list_from_file}')
+                return False, f'"{search_type}" is missing TYPE definition'
+        else:
+            print(f'Script: search: "{search_type}" is not a valid type or list')
+            return False, f'"{search_type}" is not a valid type or list'
+        # The searchfunctions return 0 if they couldnt find the value.
+        if new_offset == 0:
+            print(f'Script: search: Could not find {search_value}')
+            return False, f'Could not find {search_value} in file'
+        else:
+            self.current_offset = new_offset
+
+        return True, f'Search {search_type} @ {self.current_offset}'
+
         
 
 
