@@ -1,8 +1,6 @@
-import core.settings as cs
+import core
 from tkinter import filedialog
 from gui import * 
-import core.file as file
-from core.file import File
 
 class Main:
     def __init__(self):
@@ -62,52 +60,55 @@ class Main:
         if tempfilepath: # If the user selected a file continue
             print('Main: File selected - Checking Support')
             self.filedisplay.changetext(17)
-            tempfile = File(tempfilepath) # creates the openend file as a fileclass
+            tempfile = core.File(tempfilepath) # creates the openend file as a file-class
             self.supportcheck(tempfile) # Function that checks whether a file is supported
 
     def filealreadyopencheck(self) -> bool:
         print('Main: Checking no file is already open')
         continueload = True
-        if file.current != None:
+        if self.current_file:
             popup = Popup(23, 24, root=self.root)
             continueload = popup.buttonsbool(25, 26)   
         return continueload
     
     def supportcheck(self, tempfile):
         continueload = False
-        support = tempfile.hassupport() # returns a string depending on support-level; confirmed, unknown, unsupported
-        if support == 'confirmed': # if the id is known, it will just read it
-            print('Main: Support check: Full Support')
+        if tempfile.extension in core.suites.supported_extensions or tempfile.fullname in core.suites.supported_extensions:
+            print('Main: Support check: Fileextension Support')
+            #popup = Popup(7, 8, root=self.root)
+            #continueload = popup.buttonsbool(9,10)
             continueload = True
-        if support == 'unknown': # if the file extension is known, but the id isnt, the user is prompted to choose whether or not to continue
-            print('Main: Support check: Fileextension Support, unknown ID.')
-            popup = Popup(7, 8, root=self.root)
-            continueload = popup.buttonsbool(9,10)
-        if support == 'unsupported': # Informs the user the file isnt supported and doesnt continue
+        else:
             print('Main: Support check: Unsupported')
             popup = Popup(11, 14, root=self.root)
             popup.buttonsackknowledge(15)
             if self.firstopen == True:
                 self.filedisplay.changetext(13)
+            elif self.current_file:
+                self.filedisplay.changetext(self.current_file.fullname)
             else:
-                self.filedisplay.changetext(file.current.fullname)
+                print('Main: Something went wrong when running supportcheck')
+        
+        #if support == 'confirmed': # if the id is known, it will just read it
+         #   print('Main: Support check: Full Support')
+          #  continueload = True
         if continueload == True:
             print('Main: Mounting file')
-            tempfile.mount() # Mounts the file as core.file.current
-            #searchpattern = settings.searchpatterns[file.current.extension] # figures out what searchpattern to use
-            #searchpattern() # runs the searchpattern
+            self.current_file = tempfile
             print('\n----------------------------------------------------------------------------------')
-            print(f'\nMain: {file.current.fullname}\n')
+            print(f'\nMain: {self.current_file.fullname}\n')
             print('----------------------------------------------------------------------------------\n')
-            from Suites.GhostReconBreakpoint.GR_WeaponDBEntry import read as readweaponentry
-            readweaponentry()
+            core.debug(self.current_file)
+            self.script = core.Script(self.current_file, core.suites)
+            self.script.run()
             if self.firstopen == False:
                 print('Main: Clearing statdisplay, already had file loaded')
                 self.statdisplay.clear()
             self.firstopen = False
-            self.statdisplay.newfile(self.updatebuttons)
-            self.filedisplay.changetext(file.current.fullname)
+            self.statdisplay.newfile(self.updatebuttons, self.current_file)
+            self.filedisplay.changetext(self.current_file.fullname)
             self.newfile = True
+            
 
     def disableallbuttons(self):
         print('Main: Disabling all buttons')
@@ -117,23 +118,28 @@ class Main:
         self.revert.changestate(False)
         self.revertoriginal.changestate(False)
     
-    def enableallbuttons(self):
+    def enableallbuttons(self, write: bool = False):
         print('Main: Enabling all buttons')
-        self.write.changestate(True)
+        self.write.changestate(write)
         self.open.changestate(True)
         self.exit.changestate(True)
-        self.revert.changestate(True)
-        self.revertoriginal.changestate(True)
+        if self.statdisplay.revertcount <= 0:
+            self.revertoriginal.changestate(False)
+            self.revert.changestate(False)
 
     def writetofile(self):
         print('Main: Writing to file')
+        if self.current_file == None:
+            print('Main: Writetofile: File is None')
+            return
         self.disableallbuttons()
         self.statdisplay.state_toggleall()
         self.filedisplay.changetext(19)
         writeok = self.statdisplay.sendnewvaluestofile()
         if writeok == True:
-            file.current.write()
-            self.filedisplay.changetext(20, file.current.fullname)
+            self.current_file = self.statdisplay.file
+            self.current_file.write()
+            self.filedisplay.changetext(20, self.current_file.fullname)
             self.filehasbeenedited = False
             self.enableallbuttons()
             if self.statdisplay.revertcount <= 0:
@@ -145,47 +151,56 @@ class Main:
             print('Main: Something went wrong when writing')
             popup = Popup(22, 21, self.root)
             popup.buttonsackknowledge(15)
-            self.filedisplay.changetext(file.current.fullname)
-            self.enableallbuttons()
+            self.filedisplay.changetext(self.current_file.fullname)
+            self.enableallbuttons(write=True)
         self.statdisplay.state_toggleall()
         
     def revertstats(self):
-        if file.current != None and self.revert:
+        if self.current_file and self.revert:
             print('Main: Reverting last')
             self.revert.changestate(False)
             self.statdisplay.revertlast()
+            if self.statdisplay.revertcount == 0:
+                self.revert.changestate(False)
+                self.revertoriginal.changestate(False)
+                if self.current_file.hasbeenwritten == False:
+                    self.write.changestate(False)
+                else:
+                    self.write.changestate()
         else:
             print('Main: No file mounted, could not revert.')
-        if self.statdisplay.revertcount == 0:
-            self.revert.changestate(False)
-            self.revertoriginal.changestate(False)
-            if file.current.hasbeenwritten == False:
-                self.write.changestate(False)
-            else:
-                self.write.changestate(True)
+        
 
     def revertoriginalstats(self):
-        if file.current != None and self.revertoriginal:
+        if self.current_file and self.revertoriginal:
             print('Main: Reverting settings to original')
             self.statdisplay.revertoriginal()
             self.revertoriginal.changestate(False)
-            if file.current.hasbeenwritten == False:
+            if self.current_file.hasbeenwritten == False:
                 self.write.changestate(False)
         else:
             print('Main: No file mounted, could not revert to original.')
 
     def exitprogram(self):
         print('Main: Exiting program')
-        self.window.exit()
-        
+        savefilereminder = True
+        if self.filehasbeenedited == True:
+            print('Main: Unwritten changes, opening prompt')
+            savefilereminder = self.filealreadyopencheck() # prompts the user if they want to save first. Gets False if they cancel
+        if savefilereminder == True:
+            self.window.exit()
 
 if __name__ == '__main__': 
-    settingsinit = cs.initsettings()
-    if settingsinit == False: # stops the program if settings couldnt be set
-        popup = Popup(1, 8, backup=True) # Creates a popup telling the user settings are broke
-        createnewsettings = popup.buttonsbool(9, 10) # asks whether or not a new settings file should be created
-        if createnewsettings == True:
-            settingsinit = cs.forcecreatesettings()
+    settings_init = core.initsettings()
+    if settings_init == False: # stops the program if settings couldnt be set
+        popup = Popup(1, 2) # Creates a popup telling the user settings are broke
+        create_new_settings = popup.buttonsbool(9, 10) # asks whether or not a new settings file should be created
+        if create_new_settings == True:
+            settings_init = core.forcecreatesettings()
     # if settings are read properly, imports everything and starts Main(controller)
-    if settingsinit == True:
-        Main()
+    if settings_init == True:
+        suites_ok = core.readsuites()
+        if suites_ok == True:
+            Main()
+        if suites_ok == False:
+            print('Main: Something went wrong when loading suites')

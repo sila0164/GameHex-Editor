@@ -1,0 +1,104 @@
+File: GR_WeaponDBEntry                              # This is needed on the first line for the program to know what fileextension this script should be applied to. For multiple extension, separate each name with a '/'. See ammotype.ghex for an example.
+
+# You can also add a full name of a file (like this: "name.extension"). This gets prioritized over a script that just matches the extension.
+# This is useful if you have variations you cant get around using just scripting. 
+
+# '#' is comments, anything after '#' in a line is ignored by the program
+# This is a bit of a tutorial:
+
+# @ 50                                              # This sets the offset to the given value
+# @ -30                                             # This moves the offset back 30 (so 50 - 30)
+# @ +20                                             # This moves the offset forward 20 (so 20 + 20)
+
+# @ 14 read uint16 'Rate Of Fire'                    # This reads the value at offset 14. The offset has been moved to here now, like above.
+# "Projectile Breaking Angle" @ +42 read float      # This adds 42 to the offset and reads the value there.
+
+# Anything in '' or "" Is used as the UI Name of the value/offset. Can be added anywhere on the line
+# Having " or ' in the name is currently not supported
+
+# @ read uint40                                      # Reads from the offset without moving it.
+# @ -20 read uint24 ''                               # This works like the above, it removes the given value from the offset
+# @ 40 read uint40                                   # If no name is given it will be named 'type x', type being 'uint40' and x being '1' as there no other uint40's in the file so far.
+# @ 50 read uint40                                   # This would be 'uint40 2' in the ui
+
+# @ search ammotypes cap 1000                       # This searches for a value from a list, from current offset. 
+# For longer files - or if you know it is close after the current offset - it can be a good idea to use the cap command, otherwise it will search through the entire file
+# @ +20 search ammotypes read ammotypes 'Ammo Type' # This searches for a value from a list, and adds 20 to the current offset. You can still add and remove from the offset as above.
+# You can combine search and read uinto one line and it will read the value that it finds.
+# @ +300 read ammotypes 'Ammo Type'                 # This looks for the value in a list. Creates a dropdown with the name in ''. The Type is defined in the list.
+# @ search uint16 400, 600, 700                      # Searching for an uinteger or straight number looks like this. You can enter multiple values with ','.
+# @ -search xxxxxxxxxxxxxxxx                        # -search Searches backwards
+
+# Notes:
+# All lines that are not empty or does not have an # with nothing before it, is considered a command.
+# All lines that do something should start with @. It will not read lines without @ for now. At least until more commands are added. "segment" and "if" are some that are planned, aswell as UI customization.
+# Commands should always be followed by definitions for the command. IE. You cant write '@ 40 search read ammotypes
+# It will allways find search, read and cap in the line, order doesnt matter. It doesnt hurt to stick to a pattern though, it makes the code more readable.
+# Its a good idea to include 'cap' in all searches, even if you give it a high cap. A search can take a really long time in longer files if you dont.
+# Its important that cap is always followed by a number.
+
+# Onto the actual script:
+@ 1 read uint64 'Weapon Object ID (DONT EDIT)'
+
+@ 14 read uint16 'Rate Of Fire'
+@ 56 read float 'Projectile Breaking Angle'
+
+@ search uint32 1684107084 cap 600       # Looks for end of InitLoad_Type segment in hex.
+@ search uint32 2372360353 cap 300       
+@ +1 search uint32 2372360353 cap 300    # Looks for the next '!Xg' in ansi in hex
+@ -12 read float 'Zero (m / 1,5)'         
+@ search uint32 3059325219 cap 300       # Looks for '#™Y¶' in ansi in hex
+@ -12 read float 'Range/Drop Rate'
+
+# UI Grid
+@ search uint32 513, 1025 cap 1200       # Looks for a pouint of reference after the ui grid, that is always there.
+@ -101 read float 'Muzzle Velocity (~m/s)'
+@ +4 read float 'Recoil Pivot (Unknown)'
+@ +8 read float 'UI Accuracy (%)'
+@ +4 read float 'UI Handling (%)'
+@ +4 read float 'UI Range (%)'
+@ +4 read float 'UI Rate of Fire'
+@ +12 read float 'UI Mobility (%)'
+@ +4 read float 'UI Recoil (%)'
+@ +8 read float 'Time To Aim (s)'
+
+# Damage and Penetration
+@ -48 -search uint32 2372360353         # This looks for the '!Xg' in ansi in hex
+@ -12 read float 'Penetration Ratio'
+@ -4 read float 'Penetration'
+@ -24 read uint16 'Damage'
+
+# Sway and spread
+@ search uint32 513, 1025 cap 1200 
+@ +5 read float 'Burden Factor'
+@ +4 read float 'Sway Factor'
+@ +5 read float 'Modulated Spread Max'
+@ +4 read float 'Modulated Spread Min'
+@ +4 read float 'Modulated Ironsight Spread Min'
+@ +5 read float 'Ironsight Spread Multiplier'
+@ +4 read float 'OTS Spread Multiplier'
+@ +4 read float 'Spread Min Radius'
+@ +4 read float 'Spread Max Radius'
+@ +4 read float 'Spread time to Min'
+@ +4 read float 'Spread time to Max'
+
+@ +6 read gauss 'Spread Gauss Ironsights'
+@ +10 read gauss 'Spread Gauss Instinct'
+@ +10 read gauss 'Spread Gauss OTS'
+
+# ---------------------
+# ADD recoilpattern and Soundfile here.
+
+@ +282 read float 'Tactical reload threshold (Multiplier)'
+@ +6 read float 'Walk Run Speed Modifier (Unknown)'
+@ +8 read float 'Ironsight Speed Multiplier'
+@ +8 read float 'Rotation Multiplier (ADS Sensitivity)'
+@ +21 read float 'Noise Range (m / 1,5)'
+
+# ----------------------------
+# Ammotype and end grid ADD: spreadpattern and attachments
+@ +250 search ammotypes read ammotypes 'Ammo Type' 
+@ search uint32 1176597217
+@ -22 read float 'Time to reload'
+
+

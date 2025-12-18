@@ -1,27 +1,13 @@
 import customtkinter as ctk
 from gui.common import Button
-import core.settings
-
-popupdefault = {
-    0: 'Close',
-    1: 'ERROR: Could not read settings',
-    2: 'Could not read or create "Settings.json".\n\nTry deleting it from the folder the .exe is in, if it already exists.',
-    3: "",
-    4: "This shouldn't exist",
-    8: 'Could not read "Settings.json".\n\nIt is either corrupt, or something isnt in the correct syntax. Do you want to overwrite it and create a new one?',
-    9: 'Yes',
-    10: 'No',
-}
+import core
 
 class Popup:
     
-    def __init__(self, title, message, root=None, report: bool=False, backup:bool=False):
-        if backup == True: # gets backup settings 
-            self.backupsettings(message)
-        else:
-            self.getsettings(title, message)
-        finalmessage = self.message
-        print(f'Popup: Creating {self.title}')
+    def __init__(self, title, message, root=None, report: bool=False):
+        self.getsettings()
+        finalmessage = self.dict[message]
+        print(f'Popup: Creating {self.dict[title]}')
         if root == None: # creates itself as root if there is none
             print('Popup: Running as main root')
             self.root = ctk.CTk()
@@ -33,9 +19,10 @@ class Popup:
         if report == True: # adds the report bug text to the message if it is true
             print('Popup: Report button enabled')
             self.report = True
-            finalmessage = (f'{self.message}{self.dict[3]}')
+            finalmessage = (f'{self.dict[message]}{self.dict[3]}')
         
-        self.root.title(self.title)
+        self.root.title(self.dict[title])
+        self.root.iconbitmap("gui/icon.ico")
         self.main = ctk.CTkFrame(self.root, 
         fg_color=self.darkaccent,
         corner_radius=0)
@@ -62,27 +49,14 @@ class Popup:
         self.horseparator = ctk.CTkFrame(self.main, height=1, fg_color=self.border)
         self.horseparator.grid(row=1, column=0, columnspan=3, sticky='NEW')
     
-    def backupsettings(self, message):
-        print('Popup: Getting backup settings')
-        self.darkaccent = '#333333'
-        self.highlight = "#666666"
-        self.background = "#222222"
-        self.border = "#AAAAAA"
-        self.text = "#EEEEEE"
-        self.dict = popupdefault
-        self.message = popupdefault[message]
-        self.title = popupdefault[1]
-    
-    def getsettings(self, title, message):
+    def getsettings(self):
         print('Popup: Getting settings from core')
-        self.darkaccent = core.settings.current.darkaccent
-        self.highlight = core.settings.current.highlight
-        self.background = core.settings.current.background
-        self.border = core.settings.current.border
-        self.text = core.settings.current.text
-        self.dict = core.settings.current.language
-        self.message = self.dict[message]
-        self.title = self.dict[title]
+        self.darkaccent = core.settings.darkaccent
+        self.highlight = core.settings.highlight
+        self.background = core.settings.background
+        self.border = core.settings.border
+        self.text = core.settings.text
+        self.dict = core.settings.language
 
     def close(self):
         if isinstance(self.root, ctk.CTk):

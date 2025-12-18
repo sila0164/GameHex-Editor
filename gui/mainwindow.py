@@ -1,6 +1,5 @@
 import customtkinter as ctk
-import core.settings as cs
-import core.file as file
+import core
 import gui.common as gui
 
 class MainWindow:# The main window that contains everything
@@ -9,9 +8,10 @@ class MainWindow:# The main window that contains everything
 
         # Creates itself
         self.root = ctk.CTk()
-        self.root.title(cs.current.language[12])
-        self.root.geometry("450x600")
-        self.main = ctk.CTkFrame(self.root, fg_color=cs.current.background)
+        self.root.title(core.settings.language[12])
+        self.root.geometry("600x600")
+        self.root.iconbitmap("gui/icon.ico")
+        self.main = ctk.CTkFrame(self.root, fg_color=core.settings.background)
         self.root.grid_rowconfigure(0, weight=1)
         self.root.grid_columnconfigure(0, weight=1)
         self.main.grid(row=0, column=0, sticky='NSEW')
@@ -31,7 +31,7 @@ class MainWindow:# The main window that contains everything
 
 class ButtonBox: # The box on the left side of the window containing the buttons
     def __init__(self, parent, parentcolumn: int=0, parentrow: int=2):
-        self.main = ctk.CTkFrame(parent, fg_color=cs.current.background,
+        self.main = ctk.CTkFrame(parent, fg_color=core.settings.background,
         corner_radius=0, border_width=0)
         self.main.grid(row=parentrow, column=parentcolumn, sticky='NSEW')
         self.buttoncount = 0 # a counter of buttons, to automatically create buttons without needing to get row number
@@ -51,31 +51,31 @@ class ButtonBox: # The box on the left side of the window containing the buttons
 class FileDisplay: # The text/message display at the top of the window
         
     def __init__(self, message, parent: ctk.CTkFrame, parentcolumn: int=0, parentrow: int=0, columnspan: int=1000):
-        self.filedisplayframe = ctk.CTkFrame(parent, fg_color=cs.current.background,
+        self.filedisplayframe = ctk.CTkFrame(parent, fg_color=core.settings.background,
         corner_radius=0,
         )
         if isinstance(message, int):
-            message = cs.current.language[message]
+            message = core.settings.language[message]
         self.filedisplayframe.grid(column=parentcolumn, columnspan=columnspan, row=parentrow, sticky='WNSE')
-        self.filedisplay = ctk.CTkLabel(self.filedisplayframe, text=message, bg_color=cs.current.background,
-        text_color=cs.current.text)
+        self.filedisplay = ctk.CTkLabel(self.filedisplayframe, text=message, bg_color=core.settings.background,
+        text_color=core.settings.text)
         self.filedisplay.grid(column=0, row=0, sticky='W', padx=4)
     
     def changetext(self, message, delayedmessage = None, timer: int = 3500):
         if isinstance(message, int):
-            message = cs.current.language[message]
+            message = core.settings.language[message]
         self.filedisplay.configure(text=message)
         self.filedisplay.update_idletasks()
         if delayedmessage != None:
             if isinstance(delayedmessage, int):
-                delayedmessage = cs.current.language[delayedmessage]
+                delayedmessage = core.settings.language[delayedmessage]
             self.filedisplay.after (timer, lambda: self.filedisplay.configure(text=delayedmessage))
 
 class StatDisplay: # The main data manipulation interface
     def __init__(self, parent: ctk.CTkFrame, parentcolumn: int=2, parentrow: int=2):
         self.main = ctk.CTkScrollableFrame(parent,
-        fg_color=cs.current.darkaccent,
-        scrollbar_fg_color=cs.current.background,
+        fg_color=core.settings.darkaccent,
+        scrollbar_fg_color=core.settings.background,
         corner_radius=0)
         self.main.grid(row=parentrow, column=parentcolumn, sticky='NSEW')
         self.main.columnconfigure(0, weight=1)
@@ -83,65 +83,72 @@ class StatDisplay: # The main data manipulation interface
         self.revertlastisactive = False
         self.revertoriginalisactive = False
     
-    def newfile(self, enablewrite): # saves the dictionary to itself
+    def newfile(self, enablewrite, file: core.File):
+        self.file = file
         self.rowcount = 0
         self.revert = {}
         self.originalvalue= {}
         self.lastvalue = {}
+        self.separators = {}
         self.revertcount = 0
         self.inputs = {} # keeps track of the inputboxes
-        for index, key in enumerate(file.current.stat): # creates an inputbox for each stat in the dictionary
+        for index, key in enumerate(self.file.stat): # creates an inputbox for each stat in the dictionary
             self.main.rowconfigure(self.rowcount, weight=0) #Configures the row
-            value = file.current.stat[key]['value']
-            bgcolor = cs.current.accent
+            value = self.file.stat[key]['value']
+            typename = self.file.stat[key]['typename']
+            bgcolor = core.settings.accent
             colorcalc = self.rowcount / 2
             if colorcalc % 2 == 0: # Makes the backgroundcolor change for every other entry
-                bgcolor = cs.current.darkaccent
-            self.inputs[key] = gui.Inputbox(self.main, self.rowcount, key, value, bgcolor)
+                bgcolor = core.settings.darkaccent
+            if self.file.stat[key]['dict'] != None:
+                dictionary = self.file.stat[key]['dict']
+                self.inputs[key] = gui.Dropdown(self.main, self.rowcount, key, value, typename, dictionary, backgroundcolor=bgcolor)
+            else:
+                self.inputs[key] = gui.Inputbox(self.main, self.rowcount, key, value, typename, bgcolor)
             self.inputs[key].valuegetupdates(enablewrite)
             self.originalvalue[key] = value
             self.lastvalue[key] = value
             self.rowcount += 1 # Counts the row up 1
-            self.horsep = gui.Separator(self.main, self.rowcount, 0, 2, 'horizontal')
+            self.separators[self.rowcount] = gui.Separator(self.main, self.rowcount, 0, 2, 'horizontal')
             self.rowcount += 1
 
     def updaterevert(self, statname):
         newval = self.inputs[statname].getvalue()
-        if self.revertlastisactive == True: # To stop it updating and ruining the revertcount order, when reverting.
+        if self.revertlastisactive == True or newval == None: # To stop it updating and ruining the revertcount order, when reverting. Or if the input returns None(Dropdown does but updates twice)
             return
         if self.revertoriginalisactive == False:
             duplicatecheck = self.revertcount - 1
             if self.revertcount > 0 and self.revert[str(duplicatecheck)]['name'] == statname:
                 self.lastvalue[statname] = newval
-                cs.debug(f'Revert log: {self.revert}')
+                core.debug(f'StatDisplay: Revert log: {self.revert}')
                 return # This stops it from creating 10 entries for every little change in a box. Just saves the value at first change.
         self.revert[str(self.revertcount)] = {}
         self.revert[str(self.revertcount)]['name'] = statname
         self.revert[str(self.revertcount)]['value'] = self.lastvalue[statname]
         self.lastvalue[statname] = newval
         self.revertcount += 1
-        cs.debug(f'Revert log: {self.revert}')
+        core.debug(f'StatDisplay: Revert log: {self.revert}')
 
     def revertlast(self):
         self.revertlastisactive = True
-        cs.debug(f'Before Revert: {self.revertcount}')
+        core.debug(f'StatDisplay: Before Revert: {self.revertcount}')
         numberinlist = self.revertcount - 1
         inputname = self.revert[str(numberinlist)]['name']
         inputoldvalue = self.revert[str(numberinlist)]['value']
-        self.inputs[inputname].value.set(inputoldvalue)
+        self.inputs[inputname].valueset(inputoldvalue)
+        self.lastvalue[inputname] = inputoldvalue
         del self.revert[str(numberinlist)]
         self.revertcount -= 1
         self.revertlastisactive = False
-        cs.debug(f'After Revert: {self.revertcount}')
+        core.debug(f'StatDisplay: After Revert: {self.revertcount}')
 
     def revertoriginal(self):
         self.revertoriginalisactive = True
         for index, input in enumerate(self.inputs):
             currentvalue = self.inputs[input].getvalue()
             originalvalue = self.originalvalue[input]
-            type = file.current.stat[input]['type']
             if currentvalue != originalvalue:
-                cs.debug(f'StatDisplay: revertoriginal: in box: {currentvalue} - original: {originalvalue}')
+                core.debug(f'StatDisplay: revertoriginal: in box: {currentvalue} - original: {originalvalue}')
                 self.inputs[input].value.set(originalvalue)
         self.revertoriginalisactive = False
 
@@ -152,17 +159,19 @@ class StatDisplay: # The main data manipulation interface
     def clear(self):
         for index, input in enumerate(self.inputs):
             self.inputs[input].clear()
+        for index, sep in enumerate(self.separators):
+            self.separators[sep].main.destroy()
 
     def sendnewvaluestofile(self):
         try:
             for index, input in enumerate(self.inputs):
                 newvalue = self.inputs[input].getvalue()
-                if file.current.stat[input]['value'] != newvalue:
-                    cs.debug(f'DEBUG: StatDisplay: Sending {input} to write. {file.current.stat[input]['value']} -> {newvalue}')
-                    file.current.changevalue(input, newvalue)
+                if self.file and self.file.stat[input]['value'] != newvalue:
+                    core.debug(f'StatDisplay: Sending {input} to write. {self.file.stat[input]['value']} -> {newvalue}')
+                    self.file.changevalue(input, newvalue)
             return True
         except Exception as e:
-            cs.debug(f'DEBUG: StatDisplay: Error: {e}')
+            core.debug(f'StatDisplay: Error: {e}')
             return False
     
     
