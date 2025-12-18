@@ -17,6 +17,8 @@ It can also use lists of known values to create dropdowns.
 The program is alpha, not very feature-rich, and it is my first "proper" program. It is currently very specificaly made for what I needed it to do, so I'm sure there's a lot that could be added to make it much more useful for other tasks.  
 I imagine Python is a bad/slow choice, but it is what I've ended up learning, and it ultimately works well.
 
+---
+
 - # Features:
 
   - A simple clean ui, for easy editing of values
@@ -32,8 +34,8 @@ I imagine Python is a bad/slow choice, but it is what I've ended up learning, an
   - Expandable Suite system allowing support for an infintie amount of file types
 
 
-
-
+------
+  
 Please include the log, if you report a bug, aswell as a description of what you were trying to do, what you expected to happen and what actually happened.
 
 
