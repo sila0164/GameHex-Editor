@@ -55,15 +55,23 @@ It currently supports two different file structures:
 
   `FILE: .txt` and `File:.txt` in any combination is also acceptable syntax, if you prefer. As long as the `:` is in there it will figure it out.  
 
-  If the script supports multiple extensions or files, these can be seperated by `/`: `file: txt /docx /py`
+  If the script supports multiple extensions or files, these can be seperated by `/`:
+  
+  `file: txt /docx /py`
 
-  If you only want to apply the script to a specific file, you can write the full filename: `file: example1.txt /example2.docx`  
+  If you only want to apply the script to a specific file, you can write the full filename:
+
+  `file: example1.txt /example2.docx`  
+
   Any file that has a matching full name will use this script. The script is prioritized over a script that is used just for the extension.  
   This can be useful if you have files that have slight variations. For example:
 
-  Script 1 is for the extension:  
-  `file: txt`  
-  Script 2 is for a .txt file where variables are in a different order, or it has a slight variation:  
+  Script 1 is for the extension:
+  
+  `file: txt`
+  
+  Script 2 is for a .txt file where variables are in a different order, or it has a slight variation:
+   
   `file: annoyingfile.txt`
 
   If you open a file called "annoyingfile.txt" script 2 will be used. Script 1 will be used for any other .txt file.
