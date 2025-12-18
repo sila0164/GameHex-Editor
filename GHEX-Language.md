@@ -5,9 +5,12 @@ All files to be read by GameHex use the extension ".ghex". Any file not called "
 
 The program currently does not have any error reporting through the ui. If you want to create your own scripts or lists, use the log for debugging.
 
+For a practical example, check out my Suite for Ghost Recon Breakpoint here:
+TBD
+
 # Overview:
 
-The GHEX "Language" is a very simple programming language, that uses a very simple syntax and it is meant to be very forgiving.
+The GHEX "Language" is a very simple programming language, that uses a very simple syntax and it is meant to be very forgiving.  
 It is nonetheless a good idea to stick to a system, to avoid making the code hard to read.
 
 Each line is a command. It makes it simple to use, but is ultimately not optimal for very long commands. (This could change in the future)
@@ -26,18 +29,18 @@ It currently supports two different file structures:
 
 - ## General Info
 
-  In GHEX a line is considered an instruction. Everything is seperated by spaces (" "), except for the first line.
+  In GHEX a line is considered an instruction. Everything is seperated by spaces (" "), except for the first line.  
   All lines start with "@".  
   You can add as many spaces as you like.  
   Commands have to be after the "@", the order of commands does not matter.  
   The parameters of commands have to follow the command.  
-  Names can be added anywhere on the line.
+  Names can be added anywhere on the line.  
 
 - ## File (defining script use)
 
   `file: fileextension /anotherfileextension /filename.fileextension`
 
-  A script starts with `file:` on the first line, followed by the extension or full filename that this script should be used for. For example:
+  A script starts with `file:` on the first line, followed by the extension or full filename that this script should be used for:
   `file: txt`  
   This would then be used whenever the program opens a .txt.
 
@@ -49,8 +52,10 @@ It currently supports two different file structures:
   Any file that has a matching full name will use this script. The script is prioritized over a script that is used just for the extension.  
   This can be useful if you have files that have slight variations. For example:
 
-  Script 1 is for the extension: `file: txt`.  
-  Script 2 is for a .txt file where variables are in a different order, or it has a slight variation: `file: annoyingfile.txt`
+  Script 1 is for the extension:
+  `file: txt`.  
+  Script 2 is for a .txt file where variables are in a different order, or it has a slight variation:  
+  `file: annoyingfile.txt`
 
   If you open a file called "annoyingfile.txt" script 2 will be used and script 1 will be used for any other .txt file.
 
