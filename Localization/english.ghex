@@ -1,0 +1,29 @@
+list: English
+
+# &enter& is enter/lineshift
+
+0: Close # for closing the program or window
+1: ERROR Could not read settings
+2: Could not read or create settings.json it could be corrupt or you have made an invalid change in the file. Should a new one be created?
+3: &enter&&enter&The report button copies the log to the clipboard and opens the bugpage on nexusmods in your browser. Simply paste it into a report and tell me what you were doing.
+4: Report bug
+5: Open # A file
+6: Revert
+9: Yes
+10: No
+11: Unsupported File
+12: GameHex Alpha 0.1 # Window title
+13: Please open a file
+14: The selected file did not get recognized as a supported fileformat by the program.
+15: OK
+16: Revert&enter&to start
+17: Opening file please wait...
+18: Write
+19: Writing to file...
+20: File written!
+21: Something is not a valid number please check your values.&enter&&enter&Nothing has been written to file.
+22: Invalid Value
+23: Warning 
+24: Any changes to the current file that has not been written will be lost.
+25: Continue
+26: Cancel

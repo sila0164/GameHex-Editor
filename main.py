@@ -60,7 +60,7 @@ class Main:
         if tempfilepath: # If the user selected a file continue
             print('Main: File selected - Checking Support')
             self.filedisplay.changetext(17)
-            tempfile = core.File(tempfilepath) # creates the openend file as a fileclass
+            tempfile = core.File(tempfilepath) # creates the openend file as a file-class
             self.supportcheck(tempfile) # Function that checks whether a file is supported
 
     def filealreadyopencheck(self) -> bool:
@@ -118,13 +118,14 @@ class Main:
         self.revert.changestate(False)
         self.revertoriginal.changestate(False)
     
-    def enableallbuttons(self):
+    def enableallbuttons(self, write: bool = False):
         print('Main: Enabling all buttons')
-        self.write.changestate(True)
+        self.write.changestate(write)
         self.open.changestate(True)
         self.exit.changestate(True)
-        self.revert.changestate(True)
-        self.revertoriginal.changestate(True)
+        if self.statdisplay.revertcount <= 0:
+            self.revertoriginal.changestate(False)
+            self.revert.changestate(False)
 
     def writetofile(self):
         print('Main: Writing to file')
@@ -151,7 +152,7 @@ class Main:
             popup = Popup(22, 21, self.root)
             popup.buttonsackknowledge(15)
             self.filedisplay.changetext(self.current_file.fullname)
-            self.enableallbuttons()
+            self.enableallbuttons(write=True)
         self.statdisplay.state_toggleall()
         
     def revertstats(self):
@@ -188,11 +189,11 @@ class Main:
             savefilereminder = self.filealreadyopencheck() # prompts the user if they want to save first. Gets False if they cancel
         if savefilereminder == True:
             self.window.exit()
-        
+
 if __name__ == '__main__': 
     settings_init = core.initsettings()
     if settings_init == False: # stops the program if settings couldnt be set
-        popup = Popup(1, 8, backup=True) # Creates a popup telling the user settings are broke
+        popup = Popup(1, 2) # Creates a popup telling the user settings are broke
         create_new_settings = popup.buttonsbool(9, 10) # asks whether or not a new settings file should be created
         if create_new_settings == True:
             settings_init = core.forcecreatesettings()

@@ -9,7 +9,8 @@ class MainWindow:# The main window that contains everything
         # Creates itself
         self.root = ctk.CTk()
         self.root.title(core.settings.language[12])
-        self.root.geometry("550x600")
+        self.root.geometry("600x600")
+        self.root.iconbitmap("gui/icon.ico")
         self.main = ctk.CTkFrame(self.root, fg_color=core.settings.background)
         self.root.grid_rowconfigure(0, weight=1)
         self.root.grid_columnconfigure(0, weight=1)
@@ -101,8 +102,7 @@ class StatDisplay: # The main data manipulation interface
                 bgcolor = core.settings.darkaccent
             if self.file.stat[key]['dict'] != None:
                 dictionary = self.file.stat[key]['dict']
-                reverse_dictionary = self.file.stat[key]['dict_reverse']
-                self.inputs[key] = gui.Dropdown(self.main, self.rowcount, key, value, typename, dictionary, reverse_dictionary, backgroundcolor=bgcolor)
+                self.inputs[key] = gui.Dropdown(self.main, self.rowcount, key, value, typename, dictionary, backgroundcolor=bgcolor)
             else:
                 self.inputs[key] = gui.Inputbox(self.main, self.rowcount, key, value, typename, bgcolor)
             self.inputs[key].valuegetupdates(enablewrite)

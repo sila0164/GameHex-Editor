@@ -4,10 +4,7 @@ import tkinter as tk
 
 class Button:
     def __init__(self, parent, label, function, state:bool = True):
-        if core.settings == None: # gets backup settings if settings doesnt exist
-            self.backupsettings()
-        else:
-            self.getsettings()
+        self.getsettings()
         if isinstance(label, int): # If label is a number get it from settings language. If it isnt, its a string from popup and settings is corrupt/None
             label = core.settings.language[label]
         self.name = label
@@ -36,14 +33,6 @@ class Button:
     def clear(self):
         core.debug(f'Button: destroying "{self.name}"')
         self.button.destroy()
-
-    def backupsettings(self):
-        self.darkaccent = '#333333'
-        self.highlight = "#666666"
-        self.background = "#222222"
-        self.border = "#AAAAAA"
-        self.text = "#EEEEEE"
-        self.accent = '#444444'
 
     def getsettings(self):
         self.darkaccent = core.settings.darkaccent
@@ -85,7 +74,7 @@ class Inputbox:
                                   fg_color=backgroundcolor,
                                   text_color=core.settings.text,
                                   border_color=core.settings.border,
-                                  width=200,
+                                  width=150,
                                   height=15,
                                   )
         self.input.grid(column=2, row=0, sticky='E', padx=4, pady=1)
@@ -140,15 +129,15 @@ class Separator:
             self.main.grid(row=row, column=column, rowspan=span, sticky='NS')
             
 class Dropdown:
-    def __init__(self, parent, row, name, value, typename, dictionary, reverse_dictionary, backgroundcolor):
+    def __init__(self, parent, row, name, value, typename, dictionary, backgroundcolor):
         core.debug(f'Dropdown: Creating "{name}" with value: {value}')
 
         self.name = name
         self.type = typename
-        self.values = list(dictionary.keys())
-        self.value = tk.StringVar(name=self.name, value=reverse_dictionary[str(value)])
-        self.dictionary = dictionary
-        self.reverse_dictionary = reverse_dictionary
+        self.list = dictionary['list']
+        self.list_reverse = dictionary['list_reverse']
+        self.values = list(self.list.keys())
+        self.value = tk.StringVar(name=self.name, value=self.list_reverse[str(value)])
         
         self.main = ctk.CTkFrame(parent,
         fg_color=backgroundcolor, # creates the frame
@@ -169,7 +158,7 @@ class Dropdown:
                                   fg_color=backgroundcolor,
                                   text_color=core.settings.text,
                                   border_color=core.settings.border,
-                                  width=200,
+                                  width=150,
                                   height=15,
                                   )
         self.input.grid(column=2, row=0, sticky='E', padx=4, pady=1)
@@ -178,8 +167,7 @@ class Dropdown:
         self.trace = self.value.trace_add('write', enablewrite)
 
     def valueset(self, oldvalue):
-        print(self.reverse_dictionary)
-        self.value.set(self.reverse_dictionary[str(oldvalue)])
+        self.value.set(self.list_reverse[str(oldvalue)])
 
     def toggle(self):
         if self.input._state == 'normal':
@@ -197,7 +185,7 @@ class Dropdown:
         if input == '':
             return None
         print(input)
-        newval = self.dictionary[input]
+        newval = self.list[input]
         print(newval)
         if newval == '':
             return 0
