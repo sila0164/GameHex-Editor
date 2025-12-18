@@ -185,7 +185,8 @@ It currently supports two different file structures:
     Searches backwards/reverse from the starting point.
  
     `cap value`  
-    Caps the search to value. The search will stop at offset + cap. Only supports Integers.
+    Caps the search to value. The search will stop at offset + cap. Only supports Integers.  
+    If the search is backwards/in reverse the cap has to be negative.
  
     Examples:
     
