@@ -2,7 +2,7 @@
 
 - # Description:
 
-GameHex is a different take on a hex editor, with a greater focus on ease of use and ui. 
+GameHex is a different take on a hex editor, with a greater focus on ease of use and ui for the user. 
 
 It is primarily meant to help with repetitive tasks, editing many files that have the same layout and sharing knowledge with people who dont know how to use a hex editor.
 
