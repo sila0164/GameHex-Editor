@@ -29,11 +29,18 @@ It currently supports two different file structures:
 
 - ## General Info
 
-  In GHEX a line is considered an instruction. Everything is seperated by spaces (" "), except for the first line.  
+  In GHEX a line is considered an instruction.
+
+  Everything is seperated by spaces (" "), except for the first line.  
+
   All lines start with "@".  
+
   You can add as many spaces as you like.  
+
   Commands have to be after the "@", the order of commands does not matter.  
+
   The parameters of commands have to follow the command.  
+
   Names can be added anywhere on the line.  
 
 - ## File (defining script use)
@@ -52,12 +59,12 @@ It currently supports two different file structures:
   Any file that has a matching full name will use this script. The script is prioritized over a script that is used just for the extension.  
   This can be useful if you have files that have slight variations. For example:
 
-  Script 1 is for the extension:
-  `file: txt`.  
+  Script 1 is for the extension:  
+  `file: txt`  
   Script 2 is for a .txt file where variables are in a different order, or it has a slight variation:  
   `file: annoyingfile.txt`
 
-  If you open a file called "annoyingfile.txt" script 2 will be used and script 1 will be used for any other .txt file.
+  If you open a file called "annoyingfile.txt" script 2 will be used. Script 1 will be used for any other .txt file.
 
 - # Comments
   
@@ -71,18 +78,18 @@ It currently supports two different file structures:
 
   - ## @ (Moving the offset)
 
-    Only integers are supported.
+    Only integers/decimals are supported.
 
-    `@`
+    `@`  
     If followed by a command, it will execute the command at the current offset. Does nothing on its own.
     
     `@ +XX`  
     Adds XX to the current offset value.
     
-    `@ -XX`
+    `@ -XX`  
     Subtracts XX from the current offset value.
     
-    `@ XX`
+    `@ XX`  
     Sets the current offset value to XX.
 
   
@@ -90,10 +97,8 @@ It currently supports two different file structures:
 
     You can move the offset by using + or -:
 
-    `@ +20`
+    `@ +20`  
     `@ -20`
-
-    Please Note: Currently the program only supports decimals.
 
     You can move the offset to a specific offset by just writing a number without any + or - in front:
 
@@ -106,14 +111,14 @@ It currently supports two different file structures:
 
   - ## read (Reading a value)
 
-    `read` follows an `@` command at the beginning of the line.
+    `read` follows an `@` command at the beginning of the line.  
     Can be combined with `search`.
 
     `read type`  
     Reads the given offset as type. For supported types, see types.
  
-    `read listname`
-    Reads the given offset and finds the value in a list. Creates a dropdown with the values from the list.
+    `read listname`  
+    Reads the given offset and finds the value in a list. Creates a dropdown with the values from the list.  
     If the value is not on the list, it will call itself "Unknown".
  
     More detailed description:
@@ -132,7 +137,7 @@ It currently supports two different file structures:
 
     `@ +18 read nameoflist`
 
-    This would read the value at offset 18, and look for the value in a given list.
+    This would read the value at offset 18, and look for the value in a given list.  
     The type is defined in the list. (see lists section, for info on lists)
 
   - ## Naming values
@@ -160,16 +165,16 @@ It currently supports two different file structures:
     Can be combined with `read`.
 
     `search type value, value`  
-    Looks for the given value as the given type. Only supports Integers as value. For supported types, see Types.
+    Looks for the given value as the given type. Only supports Integers as value. For supported types, see Types.  
     Multiple values can be given using ",":
  
-    `search listname`
+    `search listname`  
     Looks for any value in the list, using the lists defined type. (see Lists)
  
-    `-search xyz`
+    `-search xyz`  
     Searches backwards/reverse from the starting point.
  
-    `cap value`
+    `cap value`  
     Caps the search to value. The search will stop at offset + cap. Only supports Integers.
  
     Examples:
@@ -184,14 +189,14 @@ It currently supports two different file structures:
 
     You can search backwards by using `-search`.
  
-    Searches can be capped using `cap XXX` anywhere on the line.
+    Searches can be capped using `cap XXX` anywhere on the line.  
     This will stop the search at "XXX" from the start point.
 
     Search and read can be combined on a line like this:
 
-    `@ 40 search mylist read mylist 'This value is a dropdown now'`
-    `@ 60 search mylist "The name can also be here" read int16 cap 400`
-    `"Or here" @ 80 read mylist -search int8 200`
+    `@ 40 search mylist read mylist 'This value is a dropdown now'`  
+    `@ 60 search mylist "The name can also be here" read int16 cap 400`  
+    `"Or here" @ 80 read mylist -search int8 200`  
 
 # Lists:
 
@@ -212,16 +217,16 @@ It currently supports two different file structures:
 
   Currently supported types (Alpha 0.1):
   
-  unsigned int 8-64 syntax:
-    uint8
-    uint16
-    uint24
-    uint32
-    uint40
-    uint48
-    uint56
-    uint64
+  unsigned int 8-64 syntax:  
+    uint8  
+    uint16  
+    uint24  
+    uint32  
+    uint40  
+    uint48  
+    uint56  
+    uint64  
 
-  float syntax:
-    float
+  float syntax:  
+    float  
   
