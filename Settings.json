@@ -23,17 +23,9 @@
         "#333333",
         "color"
     ],
-    "firstlaunch": [
-        true,
-        "bool"
-    ],
     "language": [
         "English",
         "language"
-    ],
-    "wantbackups": [
-        false,
-        "bool"
     ],
     "debug": [
         true,

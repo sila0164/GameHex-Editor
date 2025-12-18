@@ -133,6 +133,9 @@ class File:
                     debug(f'File: Skipping {stat}, no new value') # skips if write is not 1
         self.hasbeenwritten = True
 
+def error(text):
+    print(f'\n------------------------------------------------------------------\nERROR:\n{text}\n------------------------------------------------------------------\n')
+
 def debug(text):
     global settings
     if settings.debug == True:
@@ -160,24 +163,35 @@ def readlist(path, language: bool = True) -> tuple[str, dict]:
     with open(path) as f:
         line = f.readline()
         line = cleanline(line)
-        line_split = line.split(':')
-        name = line_split[1].strip()
+        try:
+            line_split = line.split(':')
+            name = line_split[1].strip()
+        except:
+            filename = os.path.basename(path)
+            error(f'List: {filename}: Could not read name on line 1:\n{line}\nSkipping list...')
+            return '', returndict
         line = f.readline()
+        line_number = 2
         while line:
             line = cleanline(line)
             if line == '': # Ignores empty lines
                 line = f.readline()
+                line_number += 1
                 continue
-            linewords = line.split(':', maxsplit=2)
-            firststring = linewords[0].strip()
-            laststring = linewords[1].strip()
-            if firststring == 'TYPE':
-                returndict[firststring] = laststring
-            elif language == False:
-                returndict[int(firststring)] = laststring
-            else:
-                returndict['list'][firststring] = laststring
-                returndict['list_reverse'][laststring] = firststring
+            try:
+                linewords = line.split(':', maxsplit=2)
+                firststring = linewords[0].strip()
+                laststring = linewords[1].strip()
+                if firststring == 'TYPE':
+                    returndict[firststring] = laststring
+                elif language == False:
+                    returndict[int(firststring)] = laststring
+                else:
+                    returndict['list'][firststring] = laststring
+                    returndict['list_reverse'][laststring] = firststring
+            except:
+                error(f'List: {name} line {line_number}: incorrect syntax:\n{line}\nIgnoring line...')
+            line_number += 1
             line = f.readline()
     return name, returndict
 
@@ -187,8 +201,9 @@ def getlocalizations(localization_folder_path: str) -> tuple[bool, dict]:
         if language.endswith('.ghex'):
             language_path = os.path.join(localization_folder_path, language)
             language_name, language_list = readlist(language_path, False)
-            localizations[language_name] = language_list
-            print(f'Localization: Loaded language: {language_name}')
+            if language_name != '':
+                localizations[language_name] = language_list
+                print(f'Localization: Loaded language: {language_name}')
 
     if len(localizations) == 0:
         print('Localization: No languages found!')
@@ -219,7 +234,6 @@ class Settings:
         if succes == False:
             print('Settings: No languages found, shutting down. Please make sure there is at least one .ghex localization file in the Localization folder.')
             sys.exit()
-        print(f'Settings: Loaded Languages: {self.languages.keys()}')
         # Default settings in case settings file cant be read
         self.language: str = 'English'
         self.background: str = '#222222'
@@ -258,7 +272,7 @@ class Settings:
             #'firstlaunch': [True, 'bool'],
             'language': ['English', 'language'],
             #'wantbackups': [False, 'bool'], 
-            'debug': [False, 'bool'],
+            'debug': [True, 'bool'],
             }
             with open(self.settingsfile, "w", encoding='utf-8') as f:
                 json.dump(self.settings, f, indent=4)
@@ -428,9 +442,10 @@ class Suites: # Finished - ADD Ability to have multiple scripts for same filetyp
                 line_lower = line.lower()
             if 'list' in line_lower:
                 name, dictionary = readlist(filepath)
-                self.loadedlists[name] = dictionary
-                print(f'Suites: List Read: {name}')
-                debug(f'{dictionary}')
+                if name != '':
+                    self.loadedlists[name] = dictionary
+                    print(f'Suites: List Loaded: {name}')
+                    debug(f'{dictionary}')
             elif 'file' in line_lower:
                 line_split = line.split(':')
                 fileformats = cleanmultientry(line_split[1], separator='/')
@@ -438,7 +453,7 @@ class Suites: # Finished - ADD Ability to have multiple scripts for same filetyp
                     self.supported_extensions[fileformat] = filepath
                 print(f'Suites: File Format Supported: {fileformat} - {filepath}')
             else:
-                print(f'Suites: {file} missing definition on line 1')
+                error(f'{file} is missing valid definition on line 1:\n {line}')
 
 suites = None
 
@@ -465,7 +480,7 @@ class Script: # Unfinished (WIP)
             script = self.suites[self.file.extension]
             debug(f'Script: Running from extension: {self.file.extension}')
         debug(script)
-        line_number = 1
+        line_number = 2
         with open(script) as f:
             line = f.readline()
             debug(line)
@@ -478,7 +493,11 @@ class Script: # Unfinished (WIP)
                     line_number += 1
                     line = f.readline()
                     continue
-                ui_name, line = getname(line) # This splits the name from the rest of the line and makes the line lower case. Removes comments.
+                try:
+                    ui_name, line = getname(line) # This splits the name from the rest of the line and makes the line lower case. Removes comments.
+                except:
+                    scriptname = os.path.basename(script)
+                    error(f'{scriptname} line {line_number}: Invalid Name\n{line}')    
                 #ADD - Namecheck for duplicates here?
                 debug(f'Script: line {line_number}: {line}')
                 debug(f'Script: name: {ui_name}')
@@ -487,27 +506,32 @@ class Script: # Unfinished (WIP)
                 if line[0] == '@': # Check for @ at the beginning of line
                     succes, offset, message = self.readoffset(line_as_list) # Read the offset and move it
                     if succes == False:
+                        error(message)
                         return False, message
-                    debug(message)
+                    
                     if 'read' in line and 'search' not in line: # If it is read only
                         succes, message = self.readvalue(offset, line_as_list, ui_name)
                         if succes == False:
+                            error(message)
                             return False, message
-                        debug(message)
+                        
                     elif 'search' in line and 'read' not in line: # If it is search only
                         succes, message = self.search(offset, line_as_list, line)
                         if succes == False:
+                            error(message)
                             return False, message
-                        debug(message)
+                        
                     elif 'search' in line and 'read' in line: # If it is both search and read
                         succes, message = self.search(offset, line_as_list, line)
                         if succes == False:
+                            error(message)
                             return False, message
-                        debug(message)
+                        
                         succes, message = self.readvalue(self.current_offset, line_as_list, ui_name)
                         if succes == False:
+                            error(message)
                             return False, message
-                        debug(message)
+                        
                     else: # If no command is given it just moves the offset
                         self.current_offset = offset
                         debug(f'Script: Moved offset to {self.current_offset}')
@@ -515,6 +539,7 @@ class Script: # Unfinished (WIP)
                     
                 line_number += 1
                 line = f.readline()
+        print('Script: Finished')
         return True, 'Script ran successfully'
 
     def readoffset(self, line: list) -> tuple[bool, int, str]: #ADD ability to read hex value and not just integers
@@ -554,10 +579,8 @@ class Script: # Unfinished (WIP)
             try:
                 read_type = list_from_file['TYPE']
             except:
-                print(f'Script: readvalue: List {read_type} is missing TYPE definition\n{list_from_file}')
-                return False, 'List is missing TYPE definition'
+                return False, f'{read_type} is missing TYPE definition'
         else:
-            print(f'Script: readvalue: "{read_type}" is not a valid type or list')
             return False, f'"{read_type}" is not a valid type or list'
         if ui_name == '':
             if read_type not in self.count_unnamed:
@@ -602,14 +625,11 @@ class Script: # Unfinished (WIP)
                 search_type = list_from_file['TYPE']
                 new_offset = self.file.dictsearch(list_from_file, search_type, offset, backwards=backwards, cap=cap)
             except:
-                print(f'Script: search: List "{search_type}" is missing TYPE definition\n{list_from_file}')
                 return False, f'"{search_type}" is missing TYPE definition'
         else:
-            print(f'Script: search: "{search_type}" is not a valid type or list')
             return False, f'"{search_type}" is not a valid type or list'
         # The searchfunctions return 0 if they couldnt find the value.
         if new_offset == 0:
-            print(f'Script: search: Could not find {search_value}')
             return False, f'Could not find {search_value} in file'
         else:
             self.current_offset = new_offset

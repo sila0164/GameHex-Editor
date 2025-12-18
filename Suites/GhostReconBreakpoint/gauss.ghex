@@ -1,6 +1,6 @@
 List: gauss
 
-TYPE: int64
+TYPE: uint64
 
 Gauss Ironsights: 707338687389
 Gauss OTS: 707338687645

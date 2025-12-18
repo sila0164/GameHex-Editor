@@ -86,19 +86,20 @@ File: GR_WeaponDBEntry                              # This is needed on the firs
 @ +10 read gauss 'Spread Gauss Instinct'
 @ +10 read gauss 'Spread Gauss OTS'
 
-# ---------------------
-# ADD recoilpattern and Soundfile here.
+@ +158 read recoilpatterns 'Recoil Pattern'
+@ +79 read shootsounds 'Sound file'
 
-@ +282 read float 'Tactical reload threshold (Multiplier)'
+@ +45 read float 'Tactical reload threshold (Multiplier)'
 @ +6 read float 'Walk Run Speed Modifier (Unknown)'
 @ +8 read float 'Ironsight Speed Multiplier'
 @ +8 read float 'Rotation Multiplier (ADS Sensitivity)'
 @ +21 read float 'Noise Range (m / 1,5)'
 
-# ----------------------------
-# Ammotype and end grid ADD: spreadpattern and attachments
 @ +250 search ammotypes read ammotypes 'Ammo Type' 
+@ search spreadpatterns read spreadpatterns 'Spread Pattern'
+@ search bulletdb read bulletdb 'Bullet DB/Type'
 @ search uint32 1176597217
 @ -22 read float 'Time to reload'
 
+# ADD: attachments
 
