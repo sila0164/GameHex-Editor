@@ -29,9 +29,9 @@ It currently supports two different file structures:
 
 - ## General Info
 
-  In GHEX a line is considered an instruction.
+  In GHEX scripts each line is considered 1 instruction.
 
-  Everything is seperated by spaces (" "), except for the first line.  
+  Everything in a line is seperated by spaces (" "), except for the first line.  
 
   All lines start with "@".  
 
