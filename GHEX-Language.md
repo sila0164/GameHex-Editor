@@ -139,7 +139,7 @@ It currently supports two different file structures:
 
     The syntax for reading a value:
 
-    `@ read int16`
+    `@ read uint16`
 
     This would read an int16 at offset 0. (If it hasnt been moved beforehand)
 
@@ -163,7 +163,7 @@ It currently supports two different file structures:
 
     Any text added to a line, using the `read`-command, within "" or '' will be used as the values name, in the ui:
 
-    `@ 40 read int64 'Name that descripes the values function'`
+    `@ 40 read float 'Name that descripes the values function'`
 
     This can be added anywhere on the line. First, at the end, or in the middle, it doesn't matter.
 
@@ -191,7 +191,7 @@ It currently supports two different file structures:
     
     The search function can be used to find values:
 
-    `@ -20 search int32 124981`
+    `@ -20 search uint32 124981`
 
     Or to find one of a set of values from a list:
 
@@ -205,8 +205,8 @@ It currently supports two different file structures:
     Search and read can be combined on a line like this:
 
     `@ 40 search mylist read mylist 'This value is a dropdown now'`  
-    `@ 60 search mylist "The name can also be here" read int16 cap 400`  
-    `"Or here" @ 80 read mylist -search int8 200`  
+    `@ 60 search mylist "The name can also be here" read uint16 cap 400`  
+    `"Or here" @ 80 read mylist -search uint8 200`  
 
 # Lists:
 
@@ -214,10 +214,11 @@ It currently supports two different file structures:
 
   `list: nameoflist`  
   A list starts with `list:` on the first line, followed by the name of the list.  
-  This name is what you use to refer to it in scripts.
+  This name is what you use to refer to it in scripts.  
+  The name CANNOT contain spaces.
   
   `TYPE: type`  
-  TYPE Defines what type the values of the list are.  
+  TYPE Defines what type the values of the list are. See below for supported types.
   TYPE Is case sensitive, and has to be all-caps.
   
   `Name For UI: value`  
