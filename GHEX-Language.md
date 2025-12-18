@@ -33,15 +33,17 @@ It currently supports two different file structures:
 
   Everything in a line is seperated by spaces (" "), except for the first line.  
 
-  All lines start with "@".  
+  All lines start with "@", except for the first line.    
 
   You can add as many spaces as you like.  
 
-  Commands have to be after the "@", the order of commands does not matter.  
+  The order of commands does not matter.  
 
   The parameters of commands have to follow the command.  
 
   Names can be added anywhere on the line.  
+
+  Comments work like comments in python. (described under "comments" below)
 
 - ## File (defining script use)
 
