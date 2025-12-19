@@ -1,6 +1,7 @@
-<img width="1305" height="133" alt="Main Banner" src="https://github.com/user-attachments/assets/752f5a03-dc13-42af-be37-f4efa7ee6d1c" />
 
-- # Description:
+<img width="1693" height="168" alt="Ghex main banner" src="https://github.com/user-attachments/assets/2336ed58-fe06-4388-962e-97bfbf14860c" />
+
+---
 
 GameHex is a different take on a hex editor, with a greater focus on ease of use and ui for the user. 
 
@@ -19,7 +20,8 @@ I imagine Python is a bad/slow choice, but it is what I've ended up learning, an
 
 ---
 
-- # Features:
+<img width="1693" height="168" alt="Ghex features banner" src="https://github.com/user-attachments/assets/1c2facc9-e0a1-45ab-9fbc-0a9ae27c310b" />
+
 
   - A simple clean ui, for easy editing of values
  
