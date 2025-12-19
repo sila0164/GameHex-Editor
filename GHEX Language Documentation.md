@@ -156,9 +156,10 @@ It currently supports two different file structures:
     Can be added to any line containing read
  
     `"Name for the UI"`  
-    `'Name for the UI'`
+    `'Name for the UI "Using apostrophes allow quotation marks!"'`
  
-    The text will be used to define the value in the ui.
+    The text will be the name used for the value in the ui.
+    ' are not supported, and will shorten the name. If you want " in the name use ' to mark the text.
  
     Detailed description:
 

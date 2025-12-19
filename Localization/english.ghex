@@ -21,7 +21,7 @@ list: English
 18: Write
 19: Writing to file...
 20: File written!
-21: Something is not a valid number please check your values.&enter&&enter&Nothing has been written to file.
+21: Something went wrong when writing to th file. Make sure all values are a valid number.&enter&&enter&Nothing has been written to file.
 22: Invalid Value
 23: Warning 
 24: Any changes to the current file that has not been written will be lost.

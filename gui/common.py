@@ -43,11 +43,12 @@ class Button:
         self.text = core.settings.text
 
 class Inputbox:
-    def __init__(self, parent, row, name, value, typename, backgroundcolor):
+    def __init__(self, parent, row, name, internal_name, value, typename, backgroundcolor):
         core.debug(f'InputBox: Creating "{name}" with value: {value}')
 
-        self.name = name
+        self.name = internal_name
         self.type = typename
+        self.title = name
         
         self.main = ctk.CTkFrame(parent,
         fg_color=backgroundcolor, # creates the frame
@@ -59,9 +60,9 @@ class Inputbox:
         self.main.columnconfigure(1, weight=1)
         self.main.columnconfigure(2, weight=0)
 
-        self.title = ctk.CTkLabel(self.main, text_color=core.settings.text, fg_color=backgroundcolor,
+        self.label = ctk.CTkLabel(self.main, text_color=core.settings.text, fg_color=backgroundcolor,
             text=name)
-        self.title.grid(column=0, row=0, sticky='W', padx=4, pady=1)
+        self.label.grid(column=0, row=0, sticky='W', padx=4, pady=1)
         
         self.value = tk.StringVar(name=self.name, value=value)
 
@@ -129,10 +130,11 @@ class Separator:
             self.main.grid(row=row, column=column, rowspan=span, sticky='NS')
             
 class Dropdown:
-    def __init__(self, parent, row, name, value, typename, dictionary, backgroundcolor):
+    def __init__(self, parent, row, name, internal_name, value, typename, dictionary, backgroundcolor):
         core.debug(f'Dropdown: Creating "{name}" with value: {value}')
 
-        self.name = name
+        self.name = internal_name
+        self.title = name
         self.type = typename
         self.list = dictionary['list']
         self.list_reverse = dictionary['list_reverse']
@@ -149,9 +151,9 @@ class Dropdown:
         self.main.columnconfigure(1, weight=1)
         self.main.columnconfigure(2, weight=0)
 
-        self.title = ctk.CTkLabel(self.main, text_color=core.settings.text, fg_color=backgroundcolor,
-            text=name)
-        self.title.grid(column=0, row=0, sticky='W', padx=4, pady=1)
+        self.label = ctk.CTkLabel(self.main, text_color=core.settings.text, fg_color=backgroundcolor,
+            text=self.title)
+        self.label.grid(column=0, row=0, sticky='W', padx=4, pady=1)
         
         self.input = ctk.CTkComboBox(self.main, variable=self.value,
                                   values=self.values,

@@ -378,12 +378,12 @@ def getname(line: str) -> tuple[str, str]:
     :rtype: tuple[name in "", the words - with name removed - in lower case, with each word as an entry in the list]
     """
     
-    if '"' in line:
-        split_line = line.split('"', maxsplit=3)
+    if "'" in line:
+        split_line = line.split("'", maxsplit=3)
         name = str(split_line[1])
         line = split_line[0] + split_line[2]
-    elif "'" in line:
-        split_line = line.split("'", maxsplit=3)
+    elif '"' in line:
+        split_line = line.split('"', maxsplit=3)
         name = str(split_line[1])
         line = split_line[0] + split_line[2]
     else:

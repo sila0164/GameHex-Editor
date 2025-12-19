@@ -92,6 +92,7 @@ class StatDisplay: # The main data manipulation interface
         self.separators = {}
         self.revertcount = 0
         self.inputs = {} # keeps track of the inputboxes
+        self.inputamount = 0
         for index, key in enumerate(self.file.stat): # creates an inputbox for each stat in the dictionary
             self.main.rowconfigure(self.rowcount, weight=0) #Configures the row
             value = self.file.stat[key]['value']
@@ -100,14 +101,16 @@ class StatDisplay: # The main data manipulation interface
             colorcalc = self.rowcount / 2
             if colorcalc % 2 == 0: # Makes the backgroundcolor change for every other entry
                 bgcolor = core.settings.darkaccent
+            self.inputamount += 1
+            inputname = str(self.inputamount)
             if self.file.stat[key]['dict'] != None:
                 dictionary = self.file.stat[key]['dict']
-                self.inputs[key] = gui.Dropdown(self.main, self.rowcount, key, value, typename, dictionary, backgroundcolor=bgcolor)
+                self.inputs[inputname] = gui.Dropdown(self.main, self.rowcount, key, inputname, value, typename, dictionary, backgroundcolor=bgcolor)
             else:
-                self.inputs[key] = gui.Inputbox(self.main, self.rowcount, key, value, typename, bgcolor)
-            self.inputs[key].valuegetupdates(enablewrite)
-            self.originalvalue[key] = value
-            self.lastvalue[key] = value
+                self.inputs[inputname] = gui.Inputbox(self.main, self.rowcount, key, inputname, value, typename, bgcolor)
+            self.inputs[inputname].valuegetupdates(enablewrite)
+            self.originalvalue[inputname] = value
+            self.lastvalue[inputname] = value
             self.rowcount += 1 # Counts the row up 1
             self.separators[self.rowcount] = gui.Separator(self.main, self.rowcount, 0, 2, 'horizontal')
             self.rowcount += 1
@@ -166,9 +169,10 @@ class StatDisplay: # The main data manipulation interface
         try:
             for index, input in enumerate(self.inputs):
                 newvalue = self.inputs[input].getvalue()
-                if self.file and self.file.stat[input]['value'] != newvalue:
-                    core.debug(f'StatDisplay: Sending {input} to write. {self.file.stat[input]['value']} -> {newvalue}')
-                    self.file.changevalue(input, newvalue)
+                key = self.inputs[input].title
+                if self.file.stat[key]['value'] != newvalue:
+                    core.debug(f'StatDisplay: Sending {key} to write. {self.file.stat[key]['value']} -> {newvalue}')
+                    self.file.changevalue(key, newvalue)
             return True
         except Exception as e:
             core.debug(f'StatDisplay: Error: {e}')
