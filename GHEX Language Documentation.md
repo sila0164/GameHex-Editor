@@ -3,7 +3,8 @@
 All files to be read by GameHex use the extension ".ghex". Any file not called ".ghex" gets ignored.
 .ghex files are utf-8 text files, and can be created with any text editor.
 
-The program currently does not have any error reporting through the ui. If you want to create your own scripts or lists, use the log for debugging.
+The program currently does not have any error reporting through the ui. If you want to create your own scripts or lists, use the log for debugging.  
+Enabling debug can also be very useful for debugging scripts. Set it to true in Settings.json. Debug prints a lot more info to the log.
 
 For a practical example, check out my Suite for Ghost Recon Breakpoint here:
 TBD
