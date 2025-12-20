@@ -4,14 +4,17 @@ All files to be read by GameHex use the extension ".ghex". Any file not called "
 .ghex files are utf-8 text files, and can be created with any text editor.
 
 The program currently does not have any error reporting through the ui. If you want to create your own scripts or lists, use the log for debugging.  
-Enabling debug can also be very useful for debugging scripts. Set it to true in Settings.json. Debug prints a lot more info to the log.
+Enabling debug can also be very useful for debugging scripts. Set it to true in Settings.json. Debug prints a lot more info to the log. Debug mode also shows the offset and type of each value in the ui.  
+Enabling devdebug adds a lot of clutter to the log and is there to help debug the program, not scripts.  
+
+You still need a hex editor like hxd to find the values.
 
 For a practical example, check out my Suite for Ghost Recon Breakpoint here:
 TBD
 
 # Overview:
 
-The GHEX "Language" is a very simple programming language, that uses a very simple syntax and it is meant to be very forgiving.  
+The GHEX "Language" is a very simple programming language, that uses a very simple linebased, keyword system. It is meant to be easy to use and very forgiving.  
 It is nonetheless a good idea to stick to a system, to avoid making the code hard to read.
 
 Each line is a command. It makes it simple to use, but is ultimately not optimal for very long commands. (This could change in the future)
@@ -24,7 +27,7 @@ It currently supports two different file structures:
 
 - Scripts: Files that read through a file.  
 
-- Lists: Files that contain names for values. Used to create dropdowns and/or limit what the user is allowed to input.
+- Lists: Files that contain names for values. Used to create dropdowns to limit what the user is allowed to input.
 
 # Scripts:
 
@@ -32,15 +35,15 @@ It currently supports two different file structures:
 
   In GHEX scripts each line is considered 1 instruction.
 
-  Everything in a line is seperated by spaces (" "), except for the first line.  
-
-  All lines start with "@", except for the first line.    
+  Everything in a line is seperated by spaces (" "), except for the first line.      
 
   You can add as many spaces as you like.  
 
   The order of commands does not matter.  
 
-  The parameters of commands have to follow the command.  
+  The parameters of commands have to follow the command.
+
+  Supports both values in decimal and hex. Hex values needs the prefix 'x' or '0x'.
 
   Names can be added anywhere on the line.  
 
@@ -85,11 +88,18 @@ It currently supports two different file structures:
 
   `code that does something here # Anything I write here the program ignores`
 
+- # endian (Changing the endian)
+
+  All scripts default to little endian. You can change it using the following command:
+
+  `endian little`  
+  `endian big`  
+
+  The command endian can be added anywhere on a line containing other commands to change it for just that command, or be added to a line on its own to change the endian for all the following commands. Has to be followed by either `little` or `big`
+
 - # Commands
 
   - ## @ (Moving the offset)
-
-    Only integers/decimals are supported.
 
     `@`  
     If followed by a command, it will execute the command at the current offset. Does nothing on its own.
@@ -113,8 +123,9 @@ It currently supports two different file structures:
 
     You can move the offset to a specific offset by just writing a number without any + or - in front:
 
-    `@ 20`
-  
+    `@ xA3`
+
+    Writing `x` or `0x` signifies a hex value.  
     With no number after the @ nothing will be changed. (Primarily for use with commands, see below).
 
     `@`  
@@ -241,6 +252,17 @@ It currently supports two different file structures:
     uint56  
     uint64  
 
+  signed int 8-64 syntax:
+    int8  
+    int16  
+    int24  
+    int32  
+    int40  
+    int48  
+    int56  
+    int64  
+
   float syntax:  
-    float  
+    float32 (single)  
+    float64 (double)
   
