@@ -1,0 +1,28 @@
+list: Dansk
+
+# &enter& is enter/lineshift
+
+0: Luk # for closing the program or window
+1: FEJL Kunne ikke læse settings
+
+2: Kunne ikke læse Settings.json. Den kan være korrupt eller også har du lavet en ændring der giver fejl. Skal den gamle overskrives med en ny?
+
+5: Åben # A file
+6: Fortryd
+9: Ja
+10: Nej
+11: Usupportered fil
+12: GameHex Alpha 0.1 # Window title
+13: Vælg en fil du vil åbne
+14: Den valgte fil blev ikke genkendt som en supporteret fil af programmet.
+15: OK
+17: Åbner fil, vent venligst...
+18: Skriv
+19: Skriver til fil...
+20: Filen er blevet skrevet!
+21: Noget gik galt under under skrivning.
+22: Værdi er ikke et nummer!
+23: Advarsel
+24: Du vil miste alle ændringer til den nuværende fil der ikke er skrevet til filen.
+25: Fortsæt
+26: Annuller

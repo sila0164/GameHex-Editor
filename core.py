@@ -182,12 +182,16 @@ def dev(text):
         print(f'DEV: {text}')
 
 def error(text):
-    print(f'\n------------------------------------------------------------------\nERROR:\n{text}\n------------------------------------------------------------------\n')
+    print(f'\n------------------------------------------------------------------\nERROR:\n{text}\n------------------------------------------------------------------\n', flush=True)
     if settings.is_exe == True:
         date = datetime.datetime.now()
-        date_error = (f'{settings.log}-ERROR-{date.year}-{date.month}-{date.day}-{date.hour}-{date.minute}-{date.second}')
-        os.rename(settings.log, date_error)
-
+        date_error = (f'ERROR-{date.year}{date.month}{date.day}-{date.hour}{date.minute}{date.second}.txt')
+        error_log = os.path.join(settings.root, date_error)
+        with open(settings.log, 'r', encoding='utf-8') as logfile:
+            error = logfile.read()
+        with open(error_log, 'w', encoding="utf-8") as errorlogfile:
+            errorlogfile.write(error)
+            
 def debug(text):
     global settings
     if settings.debug == True:
@@ -212,7 +216,7 @@ def readlist(path, language: bool = True) -> tuple[str, dict]:
     if language == True:
         returndict['list'] = {}
         returndict['list_reverse'] = {}
-    with open(path) as f:
+    with open(path, encoding='utf-8') as f:
         line = f.readline()
         line = cleanline(line)
         try:
@@ -376,7 +380,7 @@ class Settings:
                 success = True
         if success == True: # If any checks were succesful it sets the value and saves to settings.json
             setting[0] = value
-            with open(self.settingsfile, "w") as f:
+            with open(self.settingsfile, "w", encoding='utf-8') as f:
                 json.dump(self.settings, f, indent=4)
                 return True
         else: # if checks were unsuccessful it return False
@@ -509,7 +513,7 @@ class Suites: # Finished - ADD Ability to have multiple scripts for same filetyp
                 debug(f'Suites: skipping file {file}, not .ghex')
                 continue
             filepath = os.path.join(path, file)
-            with open(filepath) as f:
+            with open(filepath, encoding='utf-8') as f:
                 line = f.readline()
                 line = cleanline(line)
                 line_lower = line.lower()
@@ -555,7 +559,7 @@ class Script: # Unfinished (WIP)
             debug(f'Script: Running script for extension "{self.file.extension}":')
         debug(script + '\n')
         line_number = 2
-        with open(script) as f:
+        with open(script, encoding='utf-8') as f:
             line = f.readline()
             line = f.readline() # Skips the first line as that is only needed for the suite read.
             while line:

@@ -1,0 +1,101 @@
+Localization: Loaded language: English
+Settings: Default settings initialized
+Main: Initializing settings
+Settings: Importing settings from file
+DEBUG: Debug mode is enabled
+Main: Settings Initialized. Time elapsed: 0.00025534629821777344 seconds
+DEBUG: Suites: Beginning read in c:\Users\silas\Documents\GitHub\GameHex-Editor\Suites
+DEBUG: Suites: New suite: c:\Users\silas\Documents\GitHub\GameHex-Editor\Suites\GhostReconBreakpoint
+DEBUG: Suites: reading file: ammotype.ghex
+Suites: File Format Supported: 1_-_410.GR_WeaponRecoilPatternDBEntry
+DEBUG: Suites: reading file: ammotypes.ghex
+Suites: List Loaded: ammotypes
+DEBUG: Suites: reading file: bulletdbentries.ghex
+Suites: List Loaded: bulletdb
+DEBUG: Suites: reading file: dbenemyhealth.ghex
+Suites: File Format Supported: DBNpcHealth
+DEBUG: Suites: reading file: dbperk.ghex
+Suites: File Format Supported: DBPerk, DBMarkStatBonus
+DEBUG: Suites: reading file: gauss.ghex
+Suites: List Loaded: gauss
+DEBUG: Suites: reading file: magazines.ghex
+Suites: File Format Supported: MagazineAttachmentDBEntry
+DEBUG: Suites: reading file: modifiers.ghex
+Suites: List Loaded: modifiers
+DEBUG: Suites: reading file: muzzledbentries.ghex
+Suites: List Loaded: muzzledb
+DEBUG: Suites: reading file: recoilpatterns.ghex
+Suites: List Loaded: recoilpatterns
+DEBUG: Suites: reading file: shootsound.ghex
+Suites: List Loaded: shootsounds
+DEBUG: Suites: reading file: soldierdetectionrange.ghex
+Suites: File Format Supported: DBSoldierSoundDetectionConfig
+DEBUG: Suites: reading file: spreadpatterns.ghex
+Suites: List Loaded: spreadpatterns
+DEBUG: Suites: reading file: weapondb.ghex
+Suites: File Format Supported: GR_WeaponDBEntry
+DEBUG: Suites: Read all, supported formats:
+dict_keys(['DBAmmotype', '1_-_5,7_pistol.DBXPAction', '1_-_5,7x28.GR_WeaponSpreadDBEntry', '1_-_4.6x30.GR_WeaponRecoilPatternDBEntry', '1_-_5,45x39.DBInteractiveActionInstant', '1_-_7,62x39.DBInteractiveActionInstant', '1_-_7,62x54.DBWeaponAttachmentUIConfig', '1_-_9mm_pistol.DBXPAction', '1_-_9x39.DBEventFilter', '1_-_12,7x55.CharacterSmithEntry', '1_-_44_magnum.DBXPAction', '1_-_45_acp_pistol.GR_BulletDBEntry', '1_-_50AE.DBXPAction', '1_-_50BMG.GR_DBHUDFeedbackDescriptor', '1_-_300blk.DBMilestoneQuestObjective', '1_-_410.GR_WeaponRecoilPatternDBEntry', 'DBNpcHealth', 'DBPerk, DBMarkStatBonus', 'MagazineAttachmentDBEntry', 'DBSoldierSoundDetectionConfig', 'GR_WeaponDBEntry'])
+ Lists:
+dict_keys(['ammotypes', 'bulletdb', 'gauss', 'modifiers', 'muzzledb', 'recoilpatterns', 'shootsounds', 'spreadpatterns'])
+Suites: suites have been read
+Main: Suites Read. Time Elapsed: 0.00729060173034668 seconds
+
+Main: Creating window
+Main: Window done. Time Elapsed: 0.1730489730834961 seconds
+Main: User pressed Open
+Main: Support check: Supported
+Main: Disabling all buttons
+Main: Reading file
+
+----------------------------------------------------------------------------------
+
+Main: 1_-_ASR_416.GR_WeaponDBEntry
+
+----------------------------------------------------------------------------------
+
+DEBUG: Script: Running script for extension "GR_WeaponDBEntry":
+DEBUG: c:\Users\silas\Documents\GitHub\GameHex-Editor\Suites\GhostReconBreakpoint\weapondb.ghex
+
+DEBUG: Line: 
+DEBUG: Script: skipping empty line
+
+DEBUG: Line: endian big
+DEBUG: Script: Endian set to big
+
+DEBUG: Line: 
+DEBUG: Script: skipping empty line
+
+DEBUG: Line: @ 1 read uint64 'Weapon Object ID (DONT EDIT)'
+DEBUG: Script: reading from type "uint64"
+Endian: big
+
+DEBUG: Line: 
+DEBUG: Script: skipping empty line
+
+DEBUG: Line: @ E read uint16 'Rate Of Fire'
+DEBUG: Script: reading from type "uint16"
+Endian: big
+
+DEBUG: Line: @ 0x38 read float32 'Projectile Breaking Angle'
+DEBUG: Script: reading from type "float32"
+Endian: big
+
+DEBUG: Line: 
+DEBUG: Script: skipping empty line
+
+DEBUG: Line: @ search uint32 1684107084 cap 600
+DEBUG: Script: Type to Search: uint32
+Searchvalue(s): ['1684107084']
+Endian: big
+Cap: 600
+
+
+------------------------------------------------------------------
+ERROR:
+Could not find ['1684107084'] in file
+------------------------------------------------------------------
+
+Main: File opened, time elapsed: 0.021709680557250977
+Main: Exiting program
+Main: Disabling all buttons
