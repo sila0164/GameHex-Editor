@@ -8,7 +8,7 @@ list: English
 3: &enter&&enter&The report button copies the log to the clipboard and opens the bugpage on nexusmods in your browser. Simply paste it into a report and tell me what you were doing.
 4: Report bug
 5: Open # A file
-6: Revert
+6: Undo
 9: Yes
 10: No
 11: Unsupported File
@@ -16,12 +16,11 @@ list: English
 13: Please open a file
 14: The selected file did not get recognized as a supported fileformat by the program.
 15: OK
-16: Revert&enter&to start
 17: Opening file please wait...
 18: Write
 19: Writing to file...
 20: File written!
-21: Something went wrong when writing to th file. Make sure all values are a valid number.&enter&&enter&Nothing has been written to file.
+21: Something went wrong when writing to the file. Make sure all values are a valid number.
 22: Invalid Value
 23: Warning 
 24: Any changes to the current file that has not been written will be lost.

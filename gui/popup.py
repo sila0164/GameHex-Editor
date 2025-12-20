@@ -1,23 +1,24 @@
 import customtkinter as ctk
 from gui.common import Button
 import core
+from core import dev
 
 class Popup:
     
     def __init__(self, title, message, root=None, report: bool=False):
         self.getsettings()
         finalmessage = self.dict[message]
-        print(f'Popup: Creating {self.dict[title]}')
+        dev(f'Popup: Creating {self.dict[title]}')
         if root == None: # creates itself as root if there is none
-            print('Popup: Running as main root')
+            dev('Popup: Running as main root')
             self.root = ctk.CTk()
         else: # goes toplevel of root if there is a window open.
-            print('Popup: Running as Toplevel')
+            dev('Popup: Running as Toplevel')
             self.root = ctk.CTkToplevel(root)
         
         self.report = False
         if report == True: # adds the report bug text to the message if it is true
-            print('Popup: Report button enabled')
+            dev('Popup: Report button enabled')
             self.report = True
             finalmessage = (f'{self.dict[message]}{self.dict[3]}')
         
@@ -50,7 +51,7 @@ class Popup:
         self.horseparator.grid(row=1, column=0, columnspan=3, sticky='NEW')
     
     def getsettings(self):
-        print('Popup: Getting settings from core')
+        dev('Popup: Getting settings from core')
         self.darkaccent = core.settings.darkaccent
         self.highlight = core.settings.highlight
         self.background = core.settings.background
@@ -67,15 +68,15 @@ class Popup:
         # Creates button
         self.returnbool = False
         def true():
-            print('Popup: Player selected true')
+            dev('Popup: Player selected true')
             self.returnbool = True
             self.close()
         def false():
-            print('Popup: Player selected false')
+            dev('Popup: Player selected false')
             self.returnbool = False
             self.close()
         #Buttons
-        print(f'Popup: Creating buttonsbool: {self.dict[truelabel]} - {self.dict[falselabel]}')
+        dev(f'Popup: Creating buttonsbool: {self.dict[truelabel]} - {self.dict[falselabel]}')
         self.true = Button(self.buttonbox, label=self.dict[truelabel], function=true)
         self.false = Button(self.buttonbox, label=self.dict[falselabel], function=false)
         
@@ -96,7 +97,7 @@ class Popup:
         def ok():
             self.close()
         # true button
-        print(f'Popup: Creating buttonsackknowledge: {self.dict[label]}')
+        dev(f'Popup: Creating buttonsackknowledge: {self.dict[label]}')
         self.ok = Button(self.buttonbox, label=self.dict[label], function=ok)
         # places button in specific row
         self.buttonbox.columnconfigure(0, weight=1)

@@ -2,5 +2,5 @@ file: DBPerk, DBMarkStatBonus
 
 @ search uint32 2372360353
 @ -16 read modifiers
-@ +28 read float 'Add/Subtract'
-@ +24 read float 'Multiplier'
+@ +28 read float32 'Add/Subtract'
+@ +24 read float32 'Multiplier'
