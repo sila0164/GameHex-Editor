@@ -27,13 +27,11 @@ I imagine Python is a bad/slow choice, but it is what I've ended up learning, an
  
   - A simple scripting language to find the values in a file
  
-  - Localization support (only english included)
+  - Localization support (english and danish included)
  
-  - Reverting changes
+  - Settings file, where you can change colors, language and enable/disable extra info in the log
  
-  - Settings file, where you can change colors
- 
-  - Expandable Suite system allowing support for an infintie amount of file types
+  - Expandable Suite system allowing support for an infinite amount of file types
 
 
 ------
