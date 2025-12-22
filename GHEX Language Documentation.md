@@ -14,7 +14,7 @@ TBD
 
 # Overview:
 
-The GHEX "Language" is a very simple programming language, that uses a very simple linebased, keyword system. It is meant to be easy to use and very forgiving.  
+The GHEX "Language", uses a very simple linebased, keyword system. It is meant to be easy to use and very forgiving.  
 It is nonetheless a good idea to stick to a system, to avoid making the code hard to read.
 
 Each line is a command. It makes it simple to use, but is ultimately not optimal for very long commands. (This could change in the future)
