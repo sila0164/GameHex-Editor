@@ -48,6 +48,7 @@ It currently supports two different file structures:
   Names can be added anywhere on the line.  
 
   Comments work like comments in python. (described under "comments" below)
+  
 
 - ## File (defining script use)
 
@@ -79,6 +80,7 @@ It currently supports two different file structures:
   `file: annoyingfile.txt`
 
   If you open a file called "annoyingfile.txt" script 2 will be used. Script 1 will be used for any other .txt file.
+  
 
 - # Comments
   
@@ -87,6 +89,7 @@ It currently supports two different file structures:
   Anything on a line after a "#" is ignored by the program. For example:
 
   `code that does something here # Anything I write here the program ignores`
+  
 
 - # endian (Changing the endian)
 
@@ -96,6 +99,7 @@ It currently supports two different file structures:
   `endian big`  
 
   The command endian can be added anywhere on a line containing other commands to change it for just that command, or be added to a line on its own to change the endian for all the following commands. Has to be followed by either `little` or `big`
+  
 
 - # Commands
 
@@ -103,9 +107,12 @@ It currently supports two different file structures:
 
     `@`  
     If followed by a command, it will execute the command at the current offset. Does nothing on its own.
+    Writing `x` or `0x` before the number makes the program read it as a hex value.
+    Writing any number with no prefix or hex specific numbers, the program will assume its a decimal/integer.
     
     `@ +XX`  
     Adds XX to the current offset value.
+    
     
     `@ -XX`  
     Subtracts XX from the current offset value.
@@ -118,18 +125,22 @@ It currently supports two different file structures:
 
     You can move the offset by using + or -:
 
-    `@ +20`  
+    `@ +20`
+    Adds 20 to the current offset.
+     
     `@ -20`
+    Subtracts 20 from the current offset.  
 
     You can move the offset to a specific offset by just writing a number without any + or - in front:
 
     `@ xA3`
-
+    `@ 0xb2`
+    With no prefix the offset will be moved to the given value.
     Writing `x` or `0x` signifies a hex value.  
-    With no number after the @ nothing will be changed. (Primarily for use with commands, see below).
-
+    
     `@`  
-
+    With no number after the @ nothing will be changed. (Primarily for use with commands, see below).
+    
 
   - ## read (Reading a value)
 
@@ -162,25 +173,37 @@ It currently supports two different file structures:
     This would read the value at offset 18, and look for the value in a given list.  
     The type is defined in the list. (see lists section, for info on lists)
 
-  - ## Naming values
+    - ## Naming values
  
-    Can be added to any line containing read
+      Can be added to any line containing read
  
-    `"Name for the UI"`  
-    `'Name for the UI "Using apostrophes allow quotation marks!"'`
+      `"Name for the UI"`  
+      `'Name for the UI "Using apostrophes allow quotation marks!"'`
  
-    The text will be the name used for the value in the ui.
-    ' are not supported, and will shorten the name. If you want " in the name use ' to mark the text.
+      The text will be the name used for the value in the ui.
+      ' are not supported, and will shorten the name. If you want " in the name use ' to mark the text.
  
-    Detailed description:
+      Detailed description:
 
-    Any text added to a line, using the `read`-command, within "" or '' will be used as the values name, in the ui:
+      Any text added to a line, using the `read`-command, within "" or '' will be used as the values name, in the ui:
 
-    `@ 40 read float 'Name that descripes the values function'`
+      `@ 40 read float 'Name that descripes the values function'`
 
-    This can be added anywhere on the line. First, at the end, or in the middle, it doesn't matter.
+      This can be added anywhere on the line. First, at the end, or in the middle, it doesn't matter.
 
-    Without a name, the program will just name them "*Type* *number*", iterating the number up as it reads the same type.
+      Without a name, the program will just name them "*Type* *number*", iterating the number up as it reads the same type.
+
+    - ## changevalue
+   
+      `changevalue XXXX`
+      By adding changevalue *value* you can change the value directly from the script.
+      The new value will still need to be written, but it will be changed by default in the ui.
+
+    - ## -ui
+   
+      `-ui`
+      Makes the value not appear in the ui. It will still be read and changed using the above command.
+
 
   - ## search (Searching for values)
  
@@ -220,7 +243,21 @@ It currently supports two different file structures:
 
     `@ 40 search mylist read mylist 'This value is a dropdown now'`  
     `@ 60 search mylist "The name can also be here" read uint16 cap 400`  
-    `"Or here" @ 80 read mylist -search uint8 200`  
+    `"Or here" @ 80 read mylist -search uint8 200`
+
+
+  - ## repeat (Repeating a command)
+ 
+    `repeat x`
+    `repeat end`
+    Will repeat the commands until `repeat end` x times.
+    
+    `search xxxx repeat 5`
+    Will repeat a search 5 times.
+
+    `search xxxx read xxxx repeat 5`
+    Will repeat the search and read 5 times.
+
 
 # Lists:
 
