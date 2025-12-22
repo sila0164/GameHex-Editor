@@ -586,6 +586,8 @@ class Script: # Unfinished (WIP)
                         error(message)
                         return False, message
                     
+                    if 'repeat' in line:
+                    
                     if 'search' in line:
                         succes1, endian = self.setendian(line_as_list)
                         succes2, message = self.search(offset, line_as_list, line, endian)
@@ -604,9 +606,13 @@ class Script: # Unfinished (WIP)
                     else: # If no command is given it just moves the offset
                         self.current_offset = offset
                         debug(f'Script: Moved offset to {self.current_offset}\n')
+
                 elif 'endian' in line_as_list:
                     self.setendian(line_as_list, set_global=True)
                     debug(f'Script: Endian set to {self.current_endian}\n')
+
+                elif 'repeat' in line_as_list:
+                    repeat_amount = self.repeat(line_as_list, script=script)
                 
                 #elif line.startswith('segment'):
                     
@@ -733,6 +739,18 @@ class Script: # Unfinished (WIP)
 
         return True, f'Search {search_type} @ {self.current_offset}'
     
+    def repeat(self, line_as_list: list) -> tuple[bool, int, str]:
+        repeat_index = line_as_list.index('repeat')
+        repeat_amount = line_as_list[repeat_index + 1]
+        succes, repeat_amount = cleannumber(repeat_amount)
+        if succes == False:
+            return False, 0, f'Invalid repeat value: {repeat_amount}'
+        
+        return True, repeat_amount, f'Repeating '
+            
+
+
+
     def setendian(self, line_as_list: list, set_global: bool = False) -> tuple[bool, str]:
         if 'endian' not in line_as_list:
             current_endian = self.current_endian
