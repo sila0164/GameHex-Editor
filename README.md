@@ -1,8 +1,6 @@
 
 <img width="1693" height="168" alt="Ghex main banner" src="https://github.com/user-attachments/assets/2336ed58-fe06-4388-962e-97bfbf14860c" />
 
----
-
 GameHex is a different take on a hex editor, with a greater focus on ease of use and ui for the user. 
 
 It is primarily meant to help with repetitive tasks, editing many files that have the same layout and sharing knowledge with people who dont know how to use a hex editor.
