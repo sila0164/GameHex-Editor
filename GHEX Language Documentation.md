@@ -193,17 +193,6 @@ It currently supports two different file structures:
 
       Without a name, the program will just name them "*Type* *number*", iterating the number up as it reads the same type.
 
-    - ## changevalue
-   
-      `changevalue XXXX`
-      By adding changevalue *value* you can change the value directly from the script.
-      The new value will still need to be written, but it will be changed by default in the ui.
-
-    - ## -ui
-   
-      `-ui`
-      Makes the value not appear in the ui. It will still be read and changed using the above command.
-
 
   - ## search (Searching for values)
  
@@ -244,19 +233,6 @@ It currently supports two different file structures:
     `@ 40 search mylist read mylist 'This value is a dropdown now'`  
     `@ 60 search mylist "The name can also be here" read uint16 cap 400`  
     `"Or here" @ 80 read mylist -search uint8 200`
-
-
-  - ## repeat (Repeating a command)
- 
-    `repeat x`
-    `repeat end`
-    Will repeat the commands until `repeat end` x times.
-    
-    `search xxxx repeat 5`
-    Will repeat a search 5 times.
-
-    `search xxxx read xxxx repeat 5`
-    Will repeat the search and read 5 times.
 
 
 # Lists:
