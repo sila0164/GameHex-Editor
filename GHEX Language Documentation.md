@@ -4,14 +4,17 @@ All files to be read by GameHex use the extension ".ghex". Any file not called "
 .ghex files are utf-8 text files, and can be created with any text editor.
 
 The program currently does not have any error reporting through the ui. If you want to create your own scripts or lists, use the log for debugging.  
-Enabling debug can also be very useful for debugging scripts. Set it to true in Settings.json. Debug prints a lot more info to the log.
+Enabling debug can also be very useful for debugging scripts. Set it to true in Settings.json. Debug prints a lot more info to the log. Debug mode also shows the offset and type of each value in the ui.  
+Enabling devdebug adds a lot of clutter to the log and is there to help debug the program, not scripts.  
+
+You still need a hex editor like hxd to find the values.
 
 For a practical example, check out my Suite for Ghost Recon Breakpoint here:
 TBD
 
 # Overview:
 
-The GHEX "Language" is a very simple programming language, that uses a very simple syntax and it is meant to be very forgiving.  
+The GHEX "Language", uses a very simple linebased, keyword system. It is meant to be easy to use and very forgiving.  
 It is nonetheless a good idea to stick to a system, to avoid making the code hard to read.
 
 Each line is a command. It makes it simple to use, but is ultimately not optimal for very long commands. (This could change in the future)
@@ -24,7 +27,7 @@ It currently supports two different file structures:
 
 - Scripts: Files that read through a file.  
 
-- Lists: Files that contain names for values. Used to create dropdowns and/or limit what the user is allowed to input.
+- Lists: Files that contain names for values. Used to create dropdowns to limit what the user is allowed to input.
 
 # Scripts:
 
@@ -32,19 +35,20 @@ It currently supports two different file structures:
 
   In GHEX scripts each line is considered 1 instruction.
 
-  Everything in a line is seperated by spaces (" "), except for the first line.  
-
-  All lines start with "@", except for the first line.    
+  Everything in a line is seperated by spaces (" "), except for the first line.      
 
   You can add as many spaces as you like.  
 
   The order of commands does not matter.  
 
-  The parameters of commands have to follow the command.  
+  The parameters of commands have to follow the command.
+
+  Supports both values in decimal and hex. Hex values needs the prefix 'x' or '0x'.
 
   Names can be added anywhere on the line.  
 
   Comments work like comments in python. (described under "comments" below)
+  
 
 - ## File (defining script use)
 
@@ -76,6 +80,7 @@ It currently supports two different file structures:
   `file: annoyingfile.txt`
 
   If you open a file called "annoyingfile.txt" script 2 will be used. Script 1 will be used for any other .txt file.
+  
 
 - # Comments
   
@@ -84,18 +89,30 @@ It currently supports two different file structures:
   Anything on a line after a "#" is ignored by the program. For example:
 
   `code that does something here # Anything I write here the program ignores`
+  
+
+- # endian (Changing the endian)
+
+  All scripts default to little endian. You can change it using the following command:
+
+  `endian little`  
+  `endian big`  
+
+  The command endian can be added anywhere on a line containing other commands to change it for just that command, or be added to a line on its own to change the endian for all the following commands. Has to be followed by either `little` or `big`
+  
 
 - # Commands
 
   - ## @ (Moving the offset)
 
-    Only integers/decimals are supported.
-
     `@`  
     If followed by a command, it will execute the command at the current offset. Does nothing on its own.
+    Writing `x` or `0x` before the number makes the program read it as a hex value.
+    Writing any number with no prefix or hex specific numbers, the program will assume its a decimal/integer.
     
     `@ +XX`  
     Adds XX to the current offset value.
+    
     
     `@ -XX`  
     Subtracts XX from the current offset value.
@@ -108,17 +125,22 @@ It currently supports two different file structures:
 
     You can move the offset by using + or -:
 
-    `@ +20`  
+    `@ +20`
+    Adds 20 to the current offset.
+     
     `@ -20`
+    Subtracts 20 from the current offset.  
 
     You can move the offset to a specific offset by just writing a number without any + or - in front:
 
-    `@ 20`
-  
-    With no number after the @ nothing will be changed. (Primarily for use with commands, see below).
-
+    `@ xA3`
+    `@ 0xb2`
+    With no prefix the offset will be moved to the given value.
+    Writing `x` or `0x` signifies a hex value.  
+    
     `@`  
-
+    With no number after the @ nothing will be changed. (Primarily for use with commands, see below).
+    
 
   - ## read (Reading a value)
 
@@ -151,25 +173,26 @@ It currently supports two different file structures:
     This would read the value at offset 18, and look for the value in a given list.  
     The type is defined in the list. (see lists section, for info on lists)
 
-  - ## Naming values
+    - ## Naming values
  
-    Can be added to any line containing read
+      Can be added to any line containing read
  
-    `"Name for the UI"`  
-    `'Name for the UI "Using apostrophes allow quotation marks!"'`
+      `"Name for the UI"`  
+      `'Name for the UI "Using apostrophes allow quotation marks!"'`
  
-    The text will be the name used for the value in the ui.
-    ' are not supported, and will shorten the name. If you want " in the name use ' to mark the text.
+      The text will be the name used for the value in the ui.
+      ' are not supported, and will shorten the name. If you want " in the name use ' to mark the text.
  
-    Detailed description:
+      Detailed description:
 
-    Any text added to a line, using the `read`-command, within "" or '' will be used as the values name, in the ui:
+      Any text added to a line, using the `read`-command, within "" or '' will be used as the values name, in the ui:
 
-    `@ 40 read float 'Name that descripes the values function'`
+      `@ 40 read float 'Name that descripes the values function'`
 
-    This can be added anywhere on the line. First, at the end, or in the middle, it doesn't matter.
+      This can be added anywhere on the line. First, at the end, or in the middle, it doesn't matter.
 
-    Without a name, the program will just name them "*Type* *number*", iterating the number up as it reads the same type.
+      Without a name, the program will just name them "*Type* *number*", iterating the number up as it reads the same type.
+
 
   - ## search (Searching for values)
  
@@ -209,7 +232,8 @@ It currently supports two different file structures:
 
     `@ 40 search mylist read mylist 'This value is a dropdown now'`  
     `@ 60 search mylist "The name can also be here" read uint16 cap 400`  
-    `"Or here" @ 80 read mylist -search uint8 200`  
+    `"Or here" @ 80 read mylist -search uint8 200`
+
 
 # Lists:
 
@@ -241,6 +265,17 @@ It currently supports two different file structures:
     uint56  
     uint64  
 
+  signed int 8-64 syntax:
+    int8  
+    int16  
+    int24  
+    int32  
+    int40  
+    int48  
+    int56  
+    int64  
+
   float syntax:  
-    float  
+    float32 (single)  
+    float64 (double)
   
