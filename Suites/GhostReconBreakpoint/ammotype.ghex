@@ -1,4 +1,0 @@
-file:DBAmmotype /1_-_5,7_pistol.DBXPAction /1_-_5,7x28.GR_WeaponSpreadDBEntry /1_-_4.6x30.GR_WeaponRecoilPatternDBEntry /1_-_5,45x39.DBInteractiveActionInstant /1_-_7,62x39.DBInteractiveActionInstant /1_-_7,62x54.DBWeaponAttachmentUIConfig /1_-_9mm_pistol.DBXPAction /1_-_9x39.DBEventFilter /1_-_12,7x55.CharacterSmithEntry /1_-_44_magnum.DBXPAction /1_-_45_acp_pistol.GR_BulletDBEntry /1_-_50AE.DBXPAction /1_-_50BMG.GR_DBHUDFeedbackDescriptor /1_-_300blk.DBMilestoneQuestObjective /1_-_410.GR_WeaponRecoilPatternDBEntry
-
-@ 34 read uint16 'Ammo on load'
-@ 56 read uint16 'Max Ammo'

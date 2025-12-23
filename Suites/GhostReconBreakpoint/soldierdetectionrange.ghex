@@ -1,3 +1,0 @@
-file: DBSoldierSoundDetectionConfig
-
-@ x124 read float32 'Enemy Hearing Range (m / 1,5)'
