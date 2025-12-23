@@ -1,3 +1,0 @@
-file: DBNpcHealth
-
-@ 14 read uint16 'Health'

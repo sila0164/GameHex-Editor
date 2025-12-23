@@ -1,0 +1,68 @@
+File: GR_WeaponDBEntry                              
+
+@ 1 read uint64 'Weapon Object ID (DONT EDIT)'
+
+@ E read uint16 'Rate Of Fire'
+@ 0x38 read float32 'Projectile Breaking Angle'
+
+@ search uint32 1684107084 cap 600       # Looks for end of InitLoad_Type segment in hex.
+@ search uint32 2372360353 cap 300       
+@ +x1 search uint32 2372360353 cap 12c   # Looks for the next '!Xg' in ansi in hex
+@ -xc read float32 'Zero (m / 1,5)'         
+@ search uint32 3059325219 cap 300       # Looks for '#™Y¶' in ansi in hex
+@ -12 read float32 'Range/Drop Rate'
+
+# UI Grid
+@ search uint32 513, 1025 cap 1200       # Looks for a pouint of reference after the ui grid, that is always there.
+@ -101 read float32 'Muzzle Velocity (~m/s)'
+@ +4 read float32 'Recoil Pivot (Unknown)'
+@ +8 read float32 'UI Accuracy (%)'
+@ +4 read float32 'UI Handling (%)'
+@ +4 read float32 'UI Range (%)'
+@ +4 read float32 'UI Rate of Fire'
+@ +12 read float32 'UI Mobility (%)'
+@ +4 read float32 'UI Recoil (%)'
+@ +8 read float32 'Time To Aim (s)'
+
+# Damage and Penetration
+@ -48 -search uint32 2372360353         # This looks for the '!Xg' in ansi in hex
+@ -12 read float32 'Penetration Ratio'
+@ -4 read float32 'Penetration' 
+@ -24 read uint16 'Damage'
+
+# Sway and spread
+@ search uint32 513, 1025 cap 1200 
+@ +5 read float32 'Burden Factor'
+@ +4 read float32 'Sway Factor'
+@ +5 read float32 'Modulated Spread Max'
+@ +4 read float32 'Modulated Spread Min'
+@ +4 read float32 'Modulated Ironsight Spread Min'
+@ +5 read float32 'Ironsight Spread Multiplier'
+@ +4 read float32 'OTS Spread Multiplier'
+@ +4 read float32 'Spread Min Radius'
+@ +4 read float32 'Spread Max Radius'
+@ +4 read float32 'Spread time to Min'
+@ +4 read float32 'Spread time to Max'
+
+@ +6 read gauss 'Spread Gauss Ironsights'
+@ +10 read gauss 'Spread Gauss Instinct'
+@ +10 read gauss 'Spread Gauss OTS'
+
+@ +158 read recoilpatterns 'Recoil Pattern'
+@ +79 read shootsounds 'Sound file'
+
+@ +45 read float32 'Tactical reload threshold (Multiplier)'
+@ +6 read float32 'Walk Run Speed Modifier (Unknown)'
+@ +8 read float32 'Ironsight Speed Multiplier'
+@ +8 read float32 'Rotation Multiplier (ADS Sensitivity)'
+@ +21 read float32 'Noise Range (m / 1,5)'
+
+@ +250 search ammotypes read ammotypes 'Ammo Type' 
+@ search spreadpatterns read spreadpatterns 'Spread Pattern'
+@ search bulletdb read bulletdb 'Bullet DB/Type'
+@ search uint32 1176597217
+@ -22 read float32 'Time to reload'
+
+# ADD: attachments
+@ search uint32 1176597217 read uint32 repeat -1 hidden
+

@@ -84,7 +84,7 @@ class File:
             valueread = int.from_bytes(valuehex, byteorder=endian, signed=True)
         return valueread
 
-    def saveoffset(self, type: str, title: str, offset: int, endian: str, dict = None): # reads and saves a "stat" from a specific offset
+    def saveoffset(self, type: str, title: str, offset: int, endian: str, hide: bool, dict = None): # reads and saves a "stat" from a specific offset
         id = str(self.stat_id)
         self.stat_id += 1
         self.stat[id] = {}
@@ -94,6 +94,7 @@ class File:
         self.stat[id]["value"] = str(self.readtype(type, offset, endian)) # reads value @ offset
         self.stat[id]['dict'] = dict
         self.stat[id]['endian'] = endian
+        self.stat[id]['hidden'] = hide
         if dict != None:
             if not str(self.stat[id]['value']) in self.stat[id]['dict']['list_reverse']: # If the value is not on the list, add it as 'Unknown'
                 self.stat[id]['dict']['list'][f'Unknown: ' + type] = str(self.stat[id]['value'])
@@ -179,7 +180,10 @@ class File:
 def dev(text):
     global settings
     if settings.devdebug == True:
-        print(f'DEV: {text}')
+        if text == '':
+            print('')
+        else:
+            print(f'DEV: {text}')
 
 def error(text):
     print(f'\n------------------------------------------------------------------\nERROR:\n{text}\n------------------------------------------------------------------\n', flush=True)
@@ -195,7 +199,10 @@ def error(text):
 def debug(text):
     global settings
     if settings.debug == True:
-        print(f'DEBUG: {text}')
+        if text == '':
+            print('')
+        else:
+            print(f'DEBUG: {text}')
 
 def cleanline(line: str) -> str:
     if '#' in line:
@@ -415,7 +422,10 @@ def initsettings() -> bool:
 #------------------------------------------------------------------------------------------
 # Everything after this is for translating and using the gh fileformats and scriptlanguage
 
-
+def findline(f, linenumber: int):
+    f.seek(0)
+    for lines in range(linenumber):
+        f.readline()
 
 def cleannumber(number: str) -> tuple[bool, int]:
     """
@@ -549,6 +559,13 @@ class Script: # Unfinished (WIP)
         self.suites = suites.supported_extensions
         self.lists = suites.loadedlists
         self.current_endian = 'little'
+        self.current_repeat = 0
+        self.repeat_multiline = False
+        self.first_repeat = True
+        self.repeat_type_length = 0
+        self.repeat_end = 0
+        self.first_search_offset = -1
+        self.search_end_repeat = False
 
     def run(self) -> tuple[bool, str]:
         if self.file.fullname in self.suites:
@@ -564,9 +581,10 @@ class Script: # Unfinished (WIP)
             line = f.readline() # Skips the first line as that is only needed for the suite read.
             while line:
                 line = cleanline(line)
-                debug(f'Line: {line}')
+                debug('')
+                debug(f'Line {line_number}: {line}')
                 if line == '': # Ignores empty lines
-                    debug('Script: skipping empty line\n')
+                    debug('Script: skipping empty line')
                     line_number += 1
                     line = f.readline()
                     continue
@@ -574,7 +592,7 @@ class Script: # Unfinished (WIP)
                     ui_name, line = getname(line) # This splits the name from the rest of the line and makes the line lower case. Removes comments.
                 except:
                     scriptname = os.path.basename(script)
-                    error(f'{scriptname} line {line_number}: Invalid Name\n{line}')    
+                    error(f'{scriptname} line {line_number}: Invalid Name: {line}')    
                 #ADD - Namecheck for duplicates here?
                 dev(f'Script: line {line_number}: {line}')
                 dev(f'Script: name: {ui_name}')
@@ -585,50 +603,95 @@ class Script: # Unfinished (WIP)
                     if succes == False:
                         error(message)
                         return False, message
+                    debug(f'{message}')
                     
-                    if 'repeat' in line:
-                    
+                    if 'repeat' in line and self.current_repeat == 0:
+                        succes, repeat_amount, message = self.repeat(line_as_list)
+                        debug(f'Script: {message}')
+                        self.current_repeat = repeat_amount
+                        self.repeat_start = line_number
+                        self.first_repeat = False
+
                     if 'search' in line:
                         succes1, endian = self.setendian(line_as_list)
                         succes2, message = self.search(offset, line_as_list, line, endian)
                         if succes1 == False or succes2 == False:
                             error(message)
                             return False, message
+                        debug(f'{message}')
                         offset = self.current_offset
+                        if self.current_repeat != 0:
+                            self.current_offset += 1 # If you just repeat a search from the same offset, it will just find the same value again and again.
 
                     if 'read' in line:
-                        succes1, endian = self.setendian(line_as_list)
-                        succes2, message = self.readvalue(offset, line_as_list, endian, ui_name)
-                        if succes1 == False or succes2 == False:
-                            error(message)
-                            return False, message
+                        if self.search_end_repeat != True:
+                            succes1, endian = self.setendian(line_as_list)
+                            succes2, message = self.readvalue(offset, line_as_list, endian, ui_name)
+                            if succes1 == False or succes2 == False:
+                                error(message)
+                                return False, message
+                            debug(f'{message}')
+                        else:
+                            self.search_end_repeat = False
                          
                     else: # If no command is given it just moves the offset
                         self.current_offset = offset
-                        debug(f'Script: Moved offset to {self.current_offset}\n')
+                        debug(f'Script: Moved offset to {self.current_offset}')
 
                 elif 'endian' in line_as_list:
                     self.setendian(line_as_list, set_global=True)
-                    debug(f'Script: Endian set to {self.current_endian}\n')
+                    debug(f'Script: Endian set to {self.current_endian}')
 
                 elif 'repeat' in line_as_list:
-                    repeat_amount = self.repeat(line_as_list, script=script)
+                    if 'end' in line_as_list:
+                        self.repeat_end = line_number
+                        self.current_repeat -= 1
+                        dev(f'Script: Repeat end @ line {line_number}')
+                    else:
+                        succes, repeat_amount, message = self.repeat(line_as_list)
+                        debug(f'Script: {message}')
+                        self.repeat_start = line_number
+                        self.current_repeat = repeat_amount
+                        self.repeat_multiline = True
+                        dev(f'Script: Repeat start @ line {line_number}')
                 
                 #elif line.startswith('segment'):
-                    
-                line_number += 1
-                line = f.readline()
+                if self.repeat_multiline == True and self.current_repeat != 0:
+                    if line_number == self.repeat_end:
+                        line_number = self.repeat_start
+                        dev(f'repeating multi line: Remaining: {self.current_repeat}')
+                        findline(f, line_number)
+                    line = f.readline()
+                    line_number += 1
+
+                elif self.repeat_multiline == False and self.current_repeat != 0:
+                    self.current_repeat -= 1
+                    dev(f'repeating single line: Remaining: {self.current_repeat}')
+                    if self.current_repeat == 0:
+                        dev(f'Stopping repeat')
+                        line = f.readline()
+                        self.first_repeat = True
+                
+                else:
+                    line_number += 1
+                    self.repeat_multiline = False
+                    line = f.readline()
         print('Script: Finished')
         return True, 'Script ran successfully'
 
-    def readoffset(self, line: list) -> tuple[bool, int, str]: #ADD ability to read hex value and not just integers
+    def readoffset(self, line: list) -> tuple[bool, int, str]:
 
         if line[0] == '@':
             offset = line[1].lower()
         else:
             return False, -1, 'Syntax error at "@", check that there is a space after "@"'
         dev(f'offset is {offset}')
-        # ADD Check for hex value and that it can be converted to integer.
+
+        if 'repeat' in line and self.first_repeat == False and 'search' not in line: # If a read is repeated it adds the typelength to the offset
+            offset = self.current_offset + self.repeat_type_length
+            self.current_offset = offset
+            return True, offset, f'Repeat offset set to {offset}'
+
         if 'read' in offset or 'search' in offset: #If the offset is read it uses the general offset
             offset = self.current_offset
             dev(f'offset set to current {offset}')
@@ -666,32 +729,41 @@ class Script: # Unfinished (WIP)
 
         return True, offset, f'Offset set to {offset}'
 
-    def readvalue(self, offset: int, line: list, endian: str, ui_name: str) -> tuple[bool, str]: # Unfinished
+    def readvalue(self, offset: int, line: list, endian: str, ui_name: str) -> tuple[bool, str]: 
         readindex = line.index('read')
         read_type = line[readindex + 1]
-        dev(f'Script: Type/list to read: {read_type}\nEndian: {endian}')
+        dev(f'Script: Type/list to read: {read_type} - Endian: {endian}')
         list_from_file = None
         if read_type in validtypes:
-            debug(f'Script: reading from type "{read_type}"\nEndian: {endian}\n')
+            debug(f'Script: reading as type: "{read_type}" - Endian: {endian}')
         elif read_type in self.lists:
             list_from_file = self.lists[read_type]
-            debug(f'Script: running from list "{read_type}"\nEndian: {endian}\n')
+            debug(f'Script: running from list "{read_type}" - Endian: {endian}')
             try:
                 read_type = list_from_file['TYPE']
             except:
                 return False, f'{read_type} is missing TYPE definition'
         else:
             return False, f'"{read_type}" is not a valid type or list'
+        if offset + typelengths[read_type] > self.file.maxoffset: # Stops the program from reading beyond the end of the file.
+            self.current_repeat = 0 # Stops any repeats if they are running
+            return True, f'Reached end of file'
         if ui_name == '':
             if read_type not in self.count_unnamed:
                 self.count_unnamed[read_type] = 0
             self.count_unnamed[read_type] += 1
             number = str(self.count_unnamed[read_type])
             ui_name = read_type + ' ' + number
-        self.file.saveoffset(read_type, ui_name, offset, endian, dict=list_from_file)
+        if 'repeat' in line:
+            self.repeat_type_length = typelengths[read_type]
+        hide_value = False
+        if 'hidden' in line:
+            hide_value = True
+        self.file.saveoffset(read_type, ui_name, offset, endian, hide=hide_value, dict=list_from_file)
         return True, f'Read {read_type} @ {offset} as {ui_name}'
 
     def search(self, offset: int, line_as_list: list, line: str, endian: str) -> tuple[bool, str]:
+        
         backwards = False
         if '-search' in line_as_list:
             searchindex = line_as_list.index('-search')
@@ -704,6 +776,9 @@ class Script: # Unfinished (WIP)
         search_value[0] = line_as_list[searchindex + 2].replace(',', '')
         search_value[-1] = search_value[-1].split(' ')[0]
 
+        if self.current_repeat != 0 and self.first_search_offset < 0:
+            self.first_search_offset = offset
+
         #In case cap has been specified
         cap = None
         if 'cap' in line:
@@ -713,7 +788,7 @@ class Script: # Unfinished (WIP)
             if success == False:
                 return False, f'Invalid cap value: {capstring}'
             
-        debug(f'Script: Type to Search: {search_type}\nSearchvalue(s): {search_value}\nEndian: {endian}\nCap: {cap}\n')
+        debug(f'Script: Type to Search: {search_type} - Searchvalue(s): {search_value} - Endian: {endian} - Cap: {cap}\n')
 
         #much like the readvalue function, but searches for values instead.
         list_from_file = None
@@ -727,13 +802,19 @@ class Script: # Unfinished (WIP)
                 search_type = list_from_file['TYPE']
                 new_offset = self.file.dictsearch(list_from_file, search_type, offset, endian, backwards=backwards, cap=cap)
             except:
-                return False, f'"{search_type}" is missing TYPE definition'
+                return False, f'"{search_type}" is missing "TYPE" definition'
         else:
             return False, f'"{search_type}" is not a valid type or list'
         
         # The searchfunctions return 0 if they couldnt find the value.
-        if new_offset == 0:
+        if new_offset == 0 and self.current_repeat == 0:
             return False, f'Could not find {search_value} in file'
+        elif new_offset == 0 and self.current_repeat != 0:
+            self.current_repeat = 0
+            self.current_offset = self.first_search_offset
+            self.first_search_offset = -1
+            self.search_end_repeat = True
+            return True, f'Search Reached end of file, resetting to starting offset.'
         else:
             self.current_offset = new_offset
 
@@ -745,11 +826,10 @@ class Script: # Unfinished (WIP)
         succes, repeat_amount = cleannumber(repeat_amount)
         if succes == False:
             return False, 0, f'Invalid repeat value: {repeat_amount}'
+        if repeat_amount < -1:
+            return False, 0, f'Invalid repeat value: {repeat_amount}, repeat does not support negative values'
         
-        return True, repeat_amount, f'Repeating '
-            
-
-
+        return True, repeat_amount, f'Repeating {repeat_amount} times'
 
     def setendian(self, line_as_list: list, set_global: bool = False) -> tuple[bool, str]:
         if 'endian' not in line_as_list:

@@ -9,6 +9,8 @@ list: English
 4: Report bug
 5: Open # A file
 6: Undo
+7: Show&enter&hidden
+8: Hide&enter&hidden
 9: Yes
 10: No
 11: Unsupported File

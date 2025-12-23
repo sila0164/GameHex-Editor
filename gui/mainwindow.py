@@ -1,6 +1,6 @@
 import customtkinter as ctk
 import core
-from core import error, dev
+from core import debug, dev
 import gui.common as gui
 
 class MainWindow:# The main window that contains everything
@@ -87,9 +87,15 @@ class StatDisplay: # The main data manipulation interface
         self.main.columnconfigure(1, weight=0)
         self.revertlastisactive = False
         self.revertoriginalisactive = False
+        self.hidehidden = True
     
     def newfile(self, enablewrite, file: core.File):
         dev('StatDiplay: Creating entries')
+        self.file = file
+        self.traceback = enablewrite
+        self.buildeditor()
+
+    def buildeditor(self):
         self.main.grid_remove()
         self.rowcount = 0
         self.revert = {}
@@ -97,22 +103,25 @@ class StatDisplay: # The main data manipulation interface
         self.revertcount = 0
         self.inputs = {} # keeps track of the inputboxes
         self.inputamount = 0
-        for id in file.stat: # creates an inputbox for each stat in the dictionary
+        for id in self.file.stat: # creates an inputbox for each stat in the dictionary
+            if self.file.stat[id]['hidden'] == True and self.hidehidden == True:
+                debug(f'Hiding {self.file.stat[id]['title']}')
+                continue
             self.main.rowconfigure(self.rowcount, weight=0) #Configures the row
-            value = file.stat[id]['value']
-            title = file.stat[id]['title']
-            type = file.stat[id]['type']
-            offset = file.stat[id]['offset']
+            value = self.file.stat[id]['value']
+            title = self.file.stat[id]['title']
+            type = self.file.stat[id]['type']
+            offset = self.file.stat[id]['offset']
             bgcolor = core.settings.accent
             colorcalc = self.rowcount / 2
             if colorcalc % 2 == 0: # Makes the backgroundcolor change for every other entry
                 bgcolor = core.settings.darkaccent
-            if file.stat[id]['dict'] != None:
-                dictionary = file.stat[id]['dict']
+            if self.file.stat[id]['dict'] != None:
+                dictionary = self.file.stat[id]['dict']
                 self.inputs[id] = gui.Dropdown(self.main, self.rowcount, title, id, value, type, offset, dictionary, backgroundcolor=bgcolor)
             else:
                 self.inputs[id] = gui.Inputbox(self.main, self.rowcount, title, id, value, type, offset, bgcolor)
-            self.inputs[id].valuegetupdates(enablewrite)
+            self.inputs[id].valuegetupdates(self.traceback)
             self.rowcount += 1 # Counts the row up 1
             self.separators[self.rowcount] = gui.Separator(self.main, self.rowcount, 0, 2, 'horizontal')
             self.rowcount += 1
@@ -157,14 +166,20 @@ class StatDisplay: # The main data manipulation interface
             dev(f'StatDisplay: toggling {input}')
             self.inputs[input].toggle()
 
+    def togglehiddenvalues(self):
+        if self.hidehidden == True:
+            self.hidehidden = False
+        elif self.hidehidden == False:
+            self.hidehidden = True
+        self.clear()
+        self.buildeditor()
+
     def clear(self):
         dev('StatDisplay: Clearing')
         self.main.grid_remove()
         for input in self.inputs:
-            dev(input)
             self.inputs[input].clear()
         for sep in self.separators:
-            dev(sep)
             self.separators[sep].main.destroy()
         self.main.grid()
 

@@ -32,7 +32,7 @@
   "bool"
  ],
  "devdebug": [
-  false,
+  true,
   "bool"
  ]
 }

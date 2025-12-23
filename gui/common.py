@@ -26,6 +26,10 @@ class Button:
         if state == False:
             self.button.configure(state='disabled')
 
+    def changetext(self, localization_number: int):
+        text = core.settings.language[localization_number]
+        self.button.configure(text=text)
+
     def changestate(self, state:bool = True):
         currentstate = self.button._state # Mostly to avoid spam in terminal. Also stops any undesired behaviour in ui
         if state == False and currentstate == 'normal': # disables button if supplied bool is false

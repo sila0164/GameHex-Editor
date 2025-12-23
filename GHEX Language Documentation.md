@@ -193,16 +193,16 @@ It currently supports two different file structures:
 
       Without a name, the program will just name them "*Type* *number*", iterating the number up as it reads the same type.
 
-    - ## changevalue
+    - ## changevalue (Changing values in the script)
    
       `changevalue XXXX`
       By adding changevalue *value* you can change the value directly from the script.
       The new value will still need to be written, but it will be changed by default in the ui.
 
-    - ## -ui
+    - ## hidden (Hiding values in ui)
    
-      `-ui`
-      Makes the value not appear in the ui. It will still be read and changed using the above command.
+      `hidden`
+      Makes the value not appear in the ui. It will still be read and changed using the above command. Can be viewed by pressing "show hidden" button.
 
 
   - ## search (Searching for values)
@@ -251,9 +251,11 @@ It currently supports two different file structures:
     `repeat x`
     `repeat end`
     Will repeat the commands until `repeat end` x times.
+    Setting x to -1 will make it repeat until the end of the file.
     
     `search xxxx repeat 5`
     Will repeat a search 5 times.
+    A repeated search that goes to the end of a file, will reset to the search's starting offset.
 
     `search xxxx read xxxx repeat 5`
     Will repeat the search and read 5 times.

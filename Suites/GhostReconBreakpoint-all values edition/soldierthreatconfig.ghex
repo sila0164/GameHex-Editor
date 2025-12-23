@@ -1,0 +1,6 @@
+file: DBSoldierSoundThreatConfig
+
+@ x1 read uint64 'File ID (Dont touch)'
+
+@ x9 read float32 'Unknown 1 (not sure this is actually a value)
+@ xe read float32 'Unknown 2 (definetly a value)

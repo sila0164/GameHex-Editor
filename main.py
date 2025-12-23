@@ -22,6 +22,8 @@ class Main:
         self.buttonbox.space()
         self.revert = Button(self.buttonbox.main, 6, self.revertstats, state=False, slim=True)
         self.buttonbox.placebutton(self.revert.button)
+        self.togglehidden = Button(self.buttonbox.main, 7, self.togglehiddenvalues, state=False, slim=True)
+        self.buttonbox.placebutton(self.togglehidden.button)
         self.exit = Button(self.buttonbox.main, 0, self.exitprogram, slim=True)
         self.buttonbox.placebutton(self.exit.button, lastbutton=True)
         self.window.main.after_idle(self.window.unhide)
@@ -106,6 +108,7 @@ class Main:
             self.firstopen = False
             self.statdisplay.newfile(self.updatebuttons, self.current_file)
             self.filedisplay.changetext(self.current_file.fullname)
+            self.togglehidden.changestate(True)
             self.root.after_idle(self.openfilegettime)
             
     def openfilegettime(self):
@@ -119,14 +122,25 @@ class Main:
             self.exit.changestate(False)    
         self.revert.changestate(False)
         self.write.changestate(False)
+        self.togglehidden.changestate(False)
     
     def enablebuttons(self, write: bool = False):
         print('Main: Enabling all buttons')
         self.write.changestate(write)
         self.open.changestate(True)
         self.exit.changestate(True)
+        self.togglehidden.changestate(True)
         if self.statdisplay.revertcount > 0:
             self.revert.changestate(True)
+
+    def togglehiddenvalues(self):
+        if self.statdisplay.hidehidden == True:
+            self.togglehidden.changetext(8)
+        if self.statdisplay.hidehidden == False:
+            self.togglehidden.changetext(7)
+        self.statdisplay.togglehiddenvalues()
+        
+        
 
     def writetofile(self):
         print('Main: Writing to file')

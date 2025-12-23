@@ -1,0 +1,4 @@
+file: ScopeAttachmentDBEntry
+
+@ xb0 search uint32 2372360353
+@ +12 read float32 'Zoom level'
