@@ -1,4 +1,0 @@
-file: MagazineAttachmentDBEntry
-
-@ search uint64 9712955997587401102
-@ +8 read uint16 'Capacity'
