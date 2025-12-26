@@ -13,9 +13,6 @@ You create scripts that the program then ties to an extension or even a full fil
 When the user then opens a file with an extension the program has a script for, it creates a simple overview of all the read values, which can then be edited and written to the file.  
 It can also use lists of known values to create dropdowns.
 
-The program is alpha, not very feature-rich, and it is my first "proper" program. It is currently very specificaly made for what I needed it to do, so I'm sure there's a lot that could be added to make it much more useful for other tasks.  
-I imagine Python is a bad/slow choice, but it is what I've ended up learning, and it ultimately works well.
-
 ---
 
 <img width="1693" height="168" alt="Ghex features banner" src="https://github.com/user-attachments/assets/1c2facc9-e0a1-45ab-9fbc-0a9ae27c310b" />
