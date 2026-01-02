@@ -28,3 +28,7 @@ list: English
 24: Any changes to the current file that has not been written will be lost.
 25: Continue
 26: Cancel
+27: No values found
+28: No values were found using the script for this filetype. This could be an error, but it could also just be that the file doesnt contain what the script searches for.
+29: Unexpected error
+30: An unexpected error occured. Please report this as a bug and send the ERROR .txt file with the report.

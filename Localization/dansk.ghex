@@ -26,3 +26,7 @@ list: Dansk
 24: Du vil miste alle ændringer til den nuværende fil der ikke er skrevet til filen.
 25: Fortsæt
 26: Annuller
+27: Ingen værdier fundet
+28: Ingen værdier blev fundet med det script der er til denne filtype. Det kan være en fejl, men kan også bare være fordi filen ikke indeholder noget af det scriptet søger efter.
+29: Uventet Fejl
+30: Der er sket en uventet fejl. Rapporter dette som en bug og send ERROR .txt filen med i rapporten.

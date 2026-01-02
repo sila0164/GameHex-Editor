@@ -2,6 +2,7 @@ import core
 from tkinter import filedialog
 from gui import * 
 import time
+import sys
 
 class Main:
     def __init__(self):
@@ -106,7 +107,11 @@ class Main:
                 core.dev('Main: Clearing statdisplay, already had file loaded')
                 self.statdisplay.clear()
             self.firstopen = False
-            self.statdisplay.newfile(self.updatebuttons, self.current_file)
+            if 1 in self.current_file.stat:
+                self.statdisplay.newfile(self.updatebuttons, self.current_file)
+            else:
+                popup = Popup(27, 28, self.root)
+                popup.buttonsackknowledge(15)
             self.filedisplay.changetext(self.current_file.fullname)
             self.togglehidden.changestate(True)
             self.root.after_idle(self.openfilegettime)
@@ -151,7 +156,7 @@ class Main:
         self.disablebuttons(all=True)
         self.statdisplay.state_toggleall()
         self.filedisplay.changetext(19)
-        new_values =self.statdisplay.getvalue(all=True)
+        new_values = self.statdisplay.getvalue(all=True)
         #try:
         self.current_file.write(new_values)
         writeok = True
@@ -195,6 +200,17 @@ class Main:
         if savefilereminder == True:
             self.disablebuttons(all=True)
             self.window.exit()
+
+
+def log_exception(exc_type, exc_value, exc_tb):
+    core.syserror(exc_type, exc_value, exc_tb)
+    try:
+        popup = Popup(29, 30)
+        popup.buttonsackknowledge(15)
+    except:
+        pass
+
+sys.excepthook = log_exception
 
 if __name__ == '__main__': 
     start = time.time()

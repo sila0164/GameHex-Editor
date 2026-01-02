@@ -93,9 +93,9 @@ class StatDisplay: # The main data manipulation interface
         dev('StatDiplay: Creating entries')
         self.file = file
         self.traceback = enablewrite
-        self.buildeditor()
+        self.build_editor()
 
-    def buildeditor(self):
+    def build_editor(self):
         self.main.grid_remove()
         self.rowcount = 0
         self.revert = {}
@@ -109,6 +109,8 @@ class StatDisplay: # The main data manipulation interface
                 continue
             self.main.rowconfigure(self.rowcount, weight=0) #Configures the row
             value = self.file.stat[id]['value']
+            if self.file.stat[id]["newvalue"] != None:
+                value = self.file.stat[id]['newvalue']
             title = self.file.stat[id]['title']
             type = self.file.stat[id]['type']
             offset = self.file.stat[id]['offset']
@@ -172,7 +174,7 @@ class StatDisplay: # The main data manipulation interface
         elif self.hidehidden == False:
             self.hidehidden = True
         self.clear()
-        self.buildeditor()
+        self.build_editor()
 
     def clear(self):
         dev('StatDisplay: Clearing')

@@ -193,11 +193,12 @@ It currently supports two different file structures:
 
       Without a name, the program will just name them "*Type* *number*", iterating the number up as it reads the same type.
 
-    - ## changevalue (Changing values in the script)
+    - ## value (Changing values in the script)
    
-      `changevalue XXXX`
-      By adding changevalue *value* you can change the value directly from the script.
+      `value XXXX`
+      By adding value *value* you can change the value directly from the script.
       The new value will still need to be written, but it will be changed by default in the ui.
+      It needs to be a float or integer depending on the values type.
 
     - ## hidden (Hiding values in ui)
    
@@ -232,7 +233,7 @@ It currently supports two different file structures:
 
     Or to find one of a set of values from a list:
 
-    `@ search nameoflist`
+    `@ search name_of_list`
 
     You can search backwards by using `-search`.
  
@@ -246,11 +247,18 @@ It currently supports two different file structures:
     `"Or here" @ 80 read mylist -search uint8 200`
 
 
+  - ## segment (Running a segment)
+
+    `@ segment name_of_segment`
+    Will run a segment by the name given. For information on segments read the segments section.  
+    Cannot be combined with other commands, except for repeat.
+
+
   - ## repeat (Repeating a command)
  
     `repeat x`
-    `repeat end`
-    Will repeat the commands until `repeat end` x times.
+    `end`
+    Will repeat the commands until `end` x times.
     Setting x to -1 will make it repeat until the end of the file.
     
     `search xxxx repeat 5`
@@ -261,11 +269,31 @@ It currently supports two different file structures:
     Will repeat the search and read 5 times.
 
 
+# Segments:
+
+  Segments are similar to functions in regular programming. It is used to create a reusable set of instructions.  
+  Segments can be created in seperate files or in scripts.  
+  If written in a script use `end`, on a seperate line, to mark the end of the list.
+
+  `segment: name_of_segment`
+  A segment starts with `segment:` on the first line, followed by the name of the segment.
+  This name is what you use to refer to it in scripts.  
+  
+  You can the write all the scripting commands you want. IE:  
+  `segment: example`  
+  `@ search uint32 12345`  
+  `@ read uint32 repeat 4`  
+  `end`  
+  This segment will look for 12345 in the file and read 4 uint32's right after each other when run.
+
+
 # Lists:
 
   Lists are used to create dropdowns, to limit the users ability to type in incorrect or corrupt values, or to select a known value.
+  Lists can be created in seperate files or in scripts.  
+  If written in a script use `end`, on a seperate line, to mark the end of the list.
 
-  `list: nameoflist`  
+  `list: name_of_list`  
   A list starts with `list:` on the first line, followed by the name of the list.  
   This name is what you use to refer to it in scripts.  
   The name CANNOT contain spaces.
@@ -274,8 +302,12 @@ It currently supports two different file structures:
   TYPE Defines what type the values of the list are. See below for supported types.
   TYPE Is case sensitive, and has to be all-caps.
   
-  `Name For UI: value`  
+  `Name_for_UI: value`  
   Every entry is structured "name of value: value". The name is shown in the dropdown. The value of the selected name will be written to the file.
+
+  `end`
+  If a list is inside a script, use the command `end` to mark the end of the list and continue the rest of the script.
+
   
 # Types:
 
