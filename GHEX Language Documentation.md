@@ -247,7 +247,7 @@ It currently supports two different file structures:
     `"Or here" @ 80 read mylist -search uint8 200`
 
 
-  - ## segment (Running a segment)
+  - ## segment (Running a segment/function)
 
     `@ segment name_of_segment`
     Will run a segment by the name given. For information on segments read the segments section.  
@@ -265,8 +265,8 @@ It currently supports two different file structures:
     Will repeat a search 5 times.
     A repeated search that goes to the end of a file, will reset to the search's starting offset.
 
-    `search xxxx read xxxx repeat 5`
-    Will repeat the search and read 5 times.
+    `search xxxx read xxxx repeat -1`
+    Will repeat the search and read until the end of the file is reached.
 
 
 # Segments:

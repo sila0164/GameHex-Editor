@@ -630,7 +630,7 @@ class Script: # Unfinished (WIP)
         self.search_end_repeat = False # This is used to skip some commands when end of file is reached in a repeated search.
         self.segment_active = False # This is a flag to change from reading lines in the file to reading line from a segment 
         self.segment_line = 0 # keeps track of the current segments line
-
+        self.repeated_ui_names = {} # used to make multiple values with the same name have a number that itereates after the name.
 
     def run(self) -> tuple[bool, str]:
         if self.file.fullname in self.suites:
@@ -822,6 +822,7 @@ class Script: # Unfinished (WIP)
         read_type = line[readindex + 1]
         dev(f'Script: Type/list to read: {read_type} - Endian: {endian}')
         list_from_file = None
+        
         if read_type in validtypes:
             debug(f'Script: reading as type: "{read_type}" - Endian: {endian}')
         elif read_type in self.lists:
@@ -833,20 +834,30 @@ class Script: # Unfinished (WIP)
                 return False, f'{read_type} is missing TYPE definition'
         else:
             return False, f'"{read_type}" is not a valid type or list'
+        
         if offset + typelengths[read_type] > self.file.maxoffset: # Stops the program from reading beyond the end of the file.
             self.current_repeat = 0 # Stops any repeats if they are running
             return True, f'Reached end of file'
+        
         if ui_name == '':
             if read_type not in self.count_unnamed:
                 self.count_unnamed[read_type] = 0
             self.count_unnamed[read_type] += 1
             number = str(self.count_unnamed[read_type])
             ui_name = read_type + ' ' + number
+        if ui_name not in self.repeated_ui_names:
+            self.repeated_ui_names[ui_name] = 1
+        if self.repeated_ui_names[ui_name] != 1:
+            ui_name = ui_name + str(self.repeated_ui_names[ui_name])
+        self.repeated_ui_names[ui_name] += 1
+        
         if 'repeat' in line:
             self.repeat_type_length = typelengths[read_type]
+
         hide_value = False
         if 'hidden' in line:
             hide_value = True
+        
         new_value = None
         if 'value' in line: # Allows to change a value from the script.
             value_index = line.index('value') + 1
@@ -865,6 +876,7 @@ class Script: # Unfinished (WIP)
                 except ValueError:
                     return False, f'{new_value} is not a valid integer'
             debug(f'Presetting to {new_value}')
+        
         self.file.saveoffset(read_type, ui_name, offset, endian, hide=hide_value, newvalue=new_value, dict=list_from_file)
         return True, f'Read {read_type} @ {offset} as {ui_name}'
 
