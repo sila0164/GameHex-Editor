@@ -314,10 +314,7 @@ class Settings:
             os.makedirs(self.localizationfolder, exist_ok=False)
             error('Settings: No Localizations. Please add at least one localization .ghex file to the "Localization"-folder.')
             sys.exit()
-        succes, self.languages = getlocalizations(self.localizationfolder)
-        if succes == False:
-            error('Settings: No languages found, shutting down. Please make sure there is at least one .ghex localization file in the Localization folder.')
-            sys.exit()
+
         # Default settings in case settings file cant be read
         self.language: str = 'English'
         self.background: str = '#222222'
@@ -332,6 +329,14 @@ class Settings:
         self.debug: bool = False
         self.devdebug: bool = False
         print('Settings: Default settings initialized')
+
+    def getlocalization(self) -> bool:
+        # Reading the Localization folder
+        succes, self.languages = getlocalizations(self.localizationfolder)
+        if succes == False:
+            error('Settings: No languages found, shutting down. Please make sure there is at least one .ghex localization file in the Localization folder.')
+            return False
+        return True
 
     def readsettings(self, force: bool = False) -> bool: # This then reads/creates the settings.json file
         self.settingsfile = os.path.join(self.root, 'Settings.json')
@@ -525,7 +530,7 @@ def readsegment(path: str, start: int | None) -> tuple[str, dict]:
     returndict = {}
     with open(path, encoding='utf-8') as f:
         if start != None:
-            findline(f, start)
+            findline(f, start - 1)
         line = f.readline()
         line = cleanline(line)
         try:
@@ -536,8 +541,7 @@ def readsegment(path: str, start: int | None) -> tuple[str, dict]:
             error(f'Segment: {filename}: Could not read name on line 1:\n{line}\nSkipping segment...')
             return '', returndict
         line = f.readline()
-        line_number = 2
-        segment_number = 0
+        line_number = 1
         while line:
             line = cleanline(line)
             if line == '': # Ignores empty lines
@@ -548,7 +552,7 @@ def readsegment(path: str, start: int | None) -> tuple[str, dict]:
                 debug(f'Segment: Reached end at line {line_number}')
                 break
             try:
-                returndict[segment_number] = line
+                returndict[line_number] = line
             except:
                 error(f'Segment: {name} line {line_number}: incorrect syntax:\n{line}\nIgnoring line...')
             line_number += 1
@@ -711,7 +715,10 @@ class Script: # Unfinished (WIP)
                     if name != '':
                         self.segments[name] = segment    
                         print(f'Script: Segment Loaded: {name}')
-                        dev(f'{segment}')
+                        dev(f'Segment name: {name} \nSegment:{segment}')
+                    line = f.readline()
+                    while line.lower().strip() != 'end':
+                        line = f.readline()
 
                 elif 'list:' in line_as_list:
                     name, dictionary = readlist(script_path, start=line_number)
@@ -719,6 +726,9 @@ class Script: # Unfinished (WIP)
                         self.lists[name] = dictionary
                         print(f'Script: List Loaded: {name}')
                         dev(f'{dictionary}')
+                    line = f.readline()
+                    while line.lower().strip() != 'end':
+                        line = f.readline()
 
                 elif 'endian' in line_as_list:
                     self.setendian(line_as_list, set_global=True)
@@ -850,9 +860,6 @@ class Script: # Unfinished (WIP)
         if self.repeated_ui_names[ui_name] != 1:
             ui_name = ui_name + str(self.repeated_ui_names[ui_name])
         self.repeated_ui_names[ui_name] += 1
-        
-        if 'repeat' in line:
-            self.repeat_type_length = typelengths[read_type]
 
         hide_value = False
         if 'hidden' in line:
@@ -876,7 +883,9 @@ class Script: # Unfinished (WIP)
                 except ValueError:
                     return False, f'{new_value} is not a valid integer'
             debug(f'Presetting to {new_value}')
-        
+
+        self.current_offset = offset + typelengths[read_type]
+
         self.file.saveoffset(read_type, ui_name, offset, endian, hide=hide_value, newvalue=new_value, dict=list_from_file)
         return True, f'Read {read_type} @ {offset} as {ui_name}'
 

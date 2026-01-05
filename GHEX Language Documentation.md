@@ -145,7 +145,8 @@ It currently supports two different file structures:
   - ## read (Reading a value)
 
     `read` follows an `@` command at the beginning of the line.  
-    Can be combined with `search`.
+    Can be combined with `search`.  
+    The offset is automatically moved to after the type, when read. IE if you set an uint64, 8 is added to the current offset.
 
     `read type`  
     Reads the given offset as type. For supported types, see types.
@@ -251,7 +252,7 @@ It currently supports two different file structures:
 
     `@ segment name_of_segment`
     Will run a segment by the name given. For information on segments read the segments section.  
-    Cannot be combined with other commands, except for repeat.
+    Can be combined with search and repeat.
 
 
   - ## repeat (Repeating a command)

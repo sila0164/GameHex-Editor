@@ -102,7 +102,10 @@ class Main:
             print('----------------------------------------------------------------------------------\n')
             core.dev(self.current_file)
             self.script = core.Script(self.current_file, core.suites)
-            self.script.run()
+            success, message = self.script.run()
+            if success == False:
+                popup = Popup(Script error string ,message, self.root)
+                popup.buttonsackknowledge(15)
             if self.firstopen == False:
                 core.dev('Main: Clearing statdisplay, already had file loaded')
                 self.statdisplay.clear()
@@ -214,6 +217,11 @@ sys.excepthook = log_exception
 
 if __name__ == '__main__': 
     start = time.time()
+    print('Main: Getting languages')
+    localization_ok = core.settings.getlocalization()
+    if localization_ok == False:
+        print('\nERROR: No Languages in Localization folder')
+        sys.exit()
     print('Main: Initializing settings')
     settings_init = core.initsettings()
     if settings_init == False: # stops the program if settings couldnt be set
