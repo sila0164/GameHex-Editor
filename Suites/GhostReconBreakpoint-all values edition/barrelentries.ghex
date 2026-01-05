@@ -1,0 +1,11 @@
+list: barrels
+
+TYPE: uint64
+
+MediumBarrel: 519604627773
+ShortBarrel: 519604627820
+LongBarrel: 519604627835
+BarrelFake: 1698309492075
+MediumBarrel_Paint_locked: 1923391313467
+ShortBarrel_Short_Paint_Locked: 2075405044275
+LongBarrel_Paint_Locked: 2075405327747

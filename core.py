@@ -116,7 +116,7 @@ class File:
         while cap > searchoffset:
             search = self.readtype(type, searchoffset, endian)
             if str(search) in dict['list_reverse']:
-                dev(f"File: Found {search} @ {offset}")
+                dev(f"File: Found {search} @ {searchoffset}")
                 return searchoffset
             searchoffset += search_direction
         dev(f"File: Failed to find value in {dict}: Reached {cap}")
@@ -259,7 +259,7 @@ def readlist(path, start: int | None, language: bool = False) -> tuple[str, dict
                 line = f.readline()
                 line_number += 1
                 continue
-            if 'end' in line:
+            if line.lower().strip() == 'end':
                 debug(f'List: Reached end at line {line_number}')
                 break
             try:
@@ -548,7 +548,7 @@ def readsegment(path: str, start: int | None) -> tuple[str, dict]:
                 line = f.readline()
                 line_number += 1
                 continue
-            if 'end' in line:
+            if line.lower().strip() == 'end':
                 debug(f'Segment: Reached end at line {line_number}')
                 break
             try:
@@ -635,6 +635,7 @@ class Script: # Unfinished (WIP)
         self.segment_active = False # This is a flag to change from reading lines in the file to reading line from a segment 
         self.segment_line = 0 # keeps track of the current segments line
         self.repeated_ui_names = {} # used to make multiple values with the same name have a number that itereates after the name.
+        self.skip_until_end = False # used to skip lines that are part of a segment or list in a script
 
     def run(self) -> tuple[bool, str]:
         if self.file.fullname in self.suites:
@@ -649,6 +650,16 @@ class Script: # Unfinished (WIP)
             line = f.readline()
             line = f.readline() # Skips the first line as that is only needed for the suite read.
             while line:
+                if self.skip_until_end == True and line.lower().strip() == 'end':
+                    self.skip_until_end = False
+                    line = f.readline()
+                    line_number += 1
+                    continue
+                elif self.skip_until_end == True:
+                    dev(f'Skipping line {line_number}')
+                    line = f.readline()
+                    line_number += 1
+                    continue
                 line = cleanline(line)
                 debug('')
                 debug(f'Line {line_number}: {line}')
@@ -689,7 +700,8 @@ class Script: # Unfinished (WIP)
                             return False, message
                         debug(f'{message}')
                         offset = self.current_offset
-                        if self.current_repeat != 0:
+                        if self.current_repeat != 0 and 'read' not in line_as_list and 'segment' not in line_as_list:
+                            dev('im here')
                             self.current_offset += 1 # If you just repeat a search from the same offset, it will just find the same value again and again.
 
                     if 'read' in line:
@@ -711,24 +723,27 @@ class Script: # Unfinished (WIP)
                         debug(f'Script: Moved offset to {self.current_offset}')
 
                 elif 'segment:' in line_as_list:
+                    self.skip_until_end = True
                     name, segment = readsegment(script_path, start=line_number)
                     if name != '':
                         self.segments[name] = segment    
                         print(f'Script: Segment Loaded: {name}')
-                        dev(f'Segment name: {name} \nSegment:{segment}')
-                    line = f.readline()
-                    while line.lower().strip() != 'end':
-                        line = f.readline()
+                        debug(f'Segment name: {name}') 
+                        debug(f'{segment}')
+                    #line = f.readline()
+                    #while line.lower().strip() != 'end':
+                    #    line = f.readline()
 
                 elif 'list:' in line_as_list:
+                    self.skip_until_end = True
                     name, dictionary = readlist(script_path, start=line_number)
                     if name != '':
                         self.lists[name] = dictionary
                         print(f'Script: List Loaded: {name}')
                         dev(f'{dictionary}')
-                    line = f.readline()
-                    while line.lower().strip() != 'end':
-                        line = f.readline()
+                    #line = f.readline()
+                    #while line.lower().strip() != 'end':
+                    #    line = f.readline()
 
                 elif 'endian' in line_as_list:
                     self.setendian(line_as_list, set_global=True)
@@ -858,7 +873,7 @@ class Script: # Unfinished (WIP)
         if ui_name not in self.repeated_ui_names:
             self.repeated_ui_names[ui_name] = 1
         if self.repeated_ui_names[ui_name] != 1:
-            ui_name = ui_name + str(self.repeated_ui_names[ui_name])
+            ui_name = ui_name + ' ' + str(self.repeated_ui_names[ui_name])
         self.repeated_ui_names[ui_name] += 1
 
         hide_value = False
@@ -866,12 +881,15 @@ class Script: # Unfinished (WIP)
             hide_value = True
         
         new_value = None
+        print(line)
         if 'value' in line: # Allows to change a value from the script.
             value_index = line.index('value') + 1
-            if value_index in line:
+            print(value_index)
+            print(line[value_index])
+            try:
                 new_value = line[value_index]
-            else:
-                return False, f'Value command is missing valid value'
+            except:
+                return False, f'Value command has no value after it'
             if 'float' in read_type:
                 try:
                     new_value = float(new_value)
@@ -903,7 +921,7 @@ class Script: # Unfinished (WIP)
         search_value[0] = line_as_list[searchindex + 2].replace(',', '')
         search_value[-1] = search_value[-1].split(' ')[0]
 
-        if self.current_repeat != 0 and self.first_search_offset < 0:
+        if self.current_repeat != 0 and self.first_search_offset < 0: # Sets first_search_offset if needed to revert (end of file)
             self.first_search_offset = offset
 
         #In case cap has been specified
@@ -914,16 +932,14 @@ class Script: # Unfinished (WIP)
             success, cap = cleannumber(capstring)
             if success == False:
                 return False, f'Invalid cap value: {capstring}'
-            
-        debug(f'Script: Type to Search: {search_type} - Searchvalue(s): {search_value} - Endian: {endian} - Cap: {cap}\n')
 
         #much like the readvalue function, but searches for values instead.
         list_from_file = None
         if search_type in validtypes:
-            dev(f'Script: Searching for value as type')
+            debug(f'Script: Type to Search: {search_type} - Searchvalue(s): {search_value} - Endian: {endian} - Cap: {cap}')
             new_offset = self.file.intsearch(search_value, search_type, offset, endian, backwards=backwards, cap=cap)
         elif search_type in self.lists:
-            dev(f'Script: Searching for value in list')
+            debug(f'Script: List to Search: {search_type} - Endian: {endian} - Cap: {cap}')
             list_from_file = self.lists[search_type]
             try:
                 search_type = list_from_file['TYPE']
@@ -945,7 +961,7 @@ class Script: # Unfinished (WIP)
         else:
             self.current_offset = new_offset
 
-        return True, f'Search {search_type} @ {self.current_offset}'
+        return True, f'Found {search_type} @ {self.current_offset}'
     
     def repeat(self, line_as_list: list) -> tuple[bool, int, str]:
         repeat_index = line_as_list.index('repeat')
@@ -980,7 +996,7 @@ class Script: # Unfinished (WIP)
         if segment_name in self.segments:
             self.segment = self.segments[segment_name]
             self.segment_active = True
-            self.segment_line = 0
+            self.segment_line = 1
         else:
             return False, f'Segment {segment_name} not found'
 

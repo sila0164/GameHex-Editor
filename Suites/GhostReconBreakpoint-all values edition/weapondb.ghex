@@ -32,7 +32,7 @@ File: GR_WeaponDBEntry
 
 # Sway and spread
 @ search uint32 513, 1025 cap 1200 
-@ +1 read float32 'Burden Factor'
+@ +5 read float32 'Burden Factor'
 @ read float32 'Sway Factor'
 @ +1 read float32 'Modulated Spread Max'
 @ read float32 'Modulated Spread Min'
@@ -49,7 +49,7 @@ File: GR_WeaponDBEntry
 @ +2 read gauss 'Spread Gauss OTS'
 
 @ +150 read recoilpatterns 'Recoil Pattern'
-@ +79 read shootsounds 'Sound file'
+@ +71 read shootsounds 'Sound file'
 
 @ +37 read float32 'Tactical reload threshold (Multiplier)'
 @ +2 read float32 'Walk Run Speed Modifier (Unknown)'
