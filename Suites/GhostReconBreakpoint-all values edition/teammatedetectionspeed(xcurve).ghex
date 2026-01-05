@@ -1,0 +1,9 @@
+file: XCurve
+
+@ x1 read uint64 'File ID (dont touch)'
+
+@ x9 read uint64 'External reference'
+
+@ x1a read float32 repeat 3
+@ +6 read float32 repeat 4
+@ +9 read float32 repeat 4 

@@ -1,0 +1,95 @@
+file: DBSoldierDetectorConfig
+
+@ 1 read uint64 'File ID (dont edit)'
+
+@ x9 read alldbentries 'External reference 1'
+
+@ x14 read alldbentries 'External reference 2'
+
+@ x1e read alldbentries 'External reference 3'
+
+@ x28 read alldbentries 'External reference 4'
+
+@ x32 read alldbentries 'External reference 5'
+
+@ x3c read alldbentries 'External reference 6'
+
+@ x46 read alldbentries 'External reference 7'
+
+@ x50 read alldbentries 'External reference 8'
+
+@ x5e read alldbentries 'External reference 9'
+
+@ x68 read alldbentries 'External reference 10'
+
+@ x72 read alldbentries 'External reference 11'
+
+@ x7c read alldbentries 'External reference 12'
+
+@ x86 read alldbentries 'External reference 13'
+
+@ x90 read alldbentries 'External reference 14'
+
+@ x9a read alldbentries 'External reference 15'
+
+@ xa8 read alldbentries 'External reference 16'
+
+@ xb2 read alldbentries 'External reference 17'
+
+@ xbc read alldbentries 'External reference 18'
+
+@ xc6 read alldbentries 'External reference 19'
+
+@ xd0 read alldbentries 'External reference 20'
+
+@ xda read alldbentries 'External reference 21'
+
+@ xe4 read alldbentries 'External reference 22'
+
+@ xee read alldbentries 'External reference 23'
+
+@ xf8 read alldbentries 'External reference 24'
+
+@ x110 read alldbentries 'External reference 25'
+
+@ x11a read alldbentries 'External reference 26'
+
+@ x124 read alldbentries 'External reference 27'
+
+@ x12e read alldbentries 'External reference 28'
+
+@ x138 read alldbentries 'External reference 29'
+
+@ x142 read alldbentries 'External reference 30'
+
+@ x14c read alldbentries 'External reference 31'
+
+@ x15a read alldbentries 'External reference 32'
+
+@ x164 read alldbentries 'External reference 33'
+
+@ x16e read alldbentries 'External reference 34'
+
+@ x178 read alldbentries 'External reference 35'
+
+@ x182 read alldbentries 'External reference 36'
+
+@ x18c read alldbentries 'External reference 37'
+
+@ x196 read alldbentries 'External reference 38'
+
+@ x1a4 read alldbentries 'External reference 39'
+
+@ x1ae read alldbentries 'External reference 40'
+
+@ x1b8 read alldbentries 'External reference 41'
+
+@ x1c2 read alldbentries 'External reference 42'
+
+@ x1cc read alldbentries 'External reference 43'
+
+@ x1d6 read alldbentries 'External reference 44'
+
+@ x1e0 read alldbentries 'External reference 45'
+
+@ x1ea read alldbentries 'External reference 46'

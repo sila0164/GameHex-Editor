@@ -2,6 +2,7 @@ import core
 from tkinter import filedialog
 from gui import * 
 import time
+import sys
 
 class Main:
     def __init__(self):
@@ -22,6 +23,8 @@ class Main:
         self.buttonbox.space()
         self.revert = Button(self.buttonbox.main, 6, self.revertstats, state=False, slim=True)
         self.buttonbox.placebutton(self.revert.button)
+        self.togglehidden = Button(self.buttonbox.main, 7, self.togglehiddenvalues, state=False, slim=True)
+        self.buttonbox.placebutton(self.togglehidden.button)
         self.exit = Button(self.buttonbox.main, 0, self.exitprogram, slim=True)
         self.buttonbox.placebutton(self.exit.button, lastbutton=True)
         self.window.main.after_idle(self.window.unhide)
@@ -99,13 +102,21 @@ class Main:
             print('----------------------------------------------------------------------------------\n')
             core.dev(self.current_file)
             self.script = core.Script(self.current_file, core.suites)
-            self.script.run()
+            success, message = self.script.run()
+            if success == False:
+                popup = Popup(Script error string ,message, self.root)
+                popup.buttonsackknowledge(15)
             if self.firstopen == False:
                 core.dev('Main: Clearing statdisplay, already had file loaded')
                 self.statdisplay.clear()
             self.firstopen = False
-            self.statdisplay.newfile(self.updatebuttons, self.current_file)
+            if 1 in self.current_file.stat:
+                self.statdisplay.newfile(self.updatebuttons, self.current_file)
+            else:
+                popup = Popup(27, 28, self.root)
+                popup.buttonsackknowledge(15)
             self.filedisplay.changetext(self.current_file.fullname)
+            self.togglehidden.changestate(True)
             self.root.after_idle(self.openfilegettime)
             
     def openfilegettime(self):
@@ -119,14 +130,25 @@ class Main:
             self.exit.changestate(False)    
         self.revert.changestate(False)
         self.write.changestate(False)
+        self.togglehidden.changestate(False)
     
     def enablebuttons(self, write: bool = False):
         print('Main: Enabling all buttons')
         self.write.changestate(write)
         self.open.changestate(True)
         self.exit.changestate(True)
+        self.togglehidden.changestate(True)
         if self.statdisplay.revertcount > 0:
             self.revert.changestate(True)
+
+    def togglehiddenvalues(self):
+        if self.statdisplay.hidehidden == True:
+            self.togglehidden.changetext(8)
+        if self.statdisplay.hidehidden == False:
+            self.togglehidden.changetext(7)
+        self.statdisplay.togglehiddenvalues()
+        
+        
 
     def writetofile(self):
         print('Main: Writing to file')
@@ -137,7 +159,7 @@ class Main:
         self.disablebuttons(all=True)
         self.statdisplay.state_toggleall()
         self.filedisplay.changetext(19)
-        new_values =self.statdisplay.getvalue(all=True)
+        new_values = self.statdisplay.getvalue(all=True)
         #try:
         self.current_file.write(new_values)
         writeok = True
@@ -182,8 +204,24 @@ class Main:
             self.disablebuttons(all=True)
             self.window.exit()
 
+
+def log_exception(exc_type, exc_value, exc_tb):
+    core.syserror(exc_type, exc_value, exc_tb)
+    try:
+        popup = Popup(29, 30)
+        popup.buttonsackknowledge(15)
+    except:
+        pass
+
+sys.excepthook = log_exception
+
 if __name__ == '__main__': 
     start = time.time()
+    print('Main: Getting languages')
+    localization_ok = core.settings.getlocalization()
+    if localization_ok == False:
+        print('\nERROR: No Languages in Localization folder')
+        sys.exit()
     print('Main: Initializing settings')
     settings_init = core.initsettings()
     if settings_init == False: # stops the program if settings couldnt be set

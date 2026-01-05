@@ -48,6 +48,7 @@ It currently supports two different file structures:
   Names can be added anywhere on the line.  
 
   Comments work like comments in python. (described under "comments" below)
+  
 
 - ## File (defining script use)
 
@@ -79,6 +80,7 @@ It currently supports two different file structures:
   `file: annoyingfile.txt`
 
   If you open a file called "annoyingfile.txt" script 2 will be used. Script 1 will be used for any other .txt file.
+  
 
 - # Comments
   
@@ -87,6 +89,7 @@ It currently supports two different file structures:
   Anything on a line after a "#" is ignored by the program. For example:
 
   `code that does something here # Anything I write here the program ignores`
+  
 
 - # endian (Changing the endian)
 
@@ -96,6 +99,7 @@ It currently supports two different file structures:
   `endian big`  
 
   The command endian can be added anywhere on a line containing other commands to change it for just that command, or be added to a line on its own to change the endian for all the following commands. Has to be followed by either `little` or `big`
+  
 
 - # Commands
 
@@ -103,9 +107,12 @@ It currently supports two different file structures:
 
     `@`  
     If followed by a command, it will execute the command at the current offset. Does nothing on its own.
+    Writing `x` or `0x` before the number makes the program read it as a hex value.
+    Writing any number with no prefix or hex specific numbers, the program will assume its a decimal/integer.
     
     `@ +XX`  
     Adds XX to the current offset value.
+    
     
     `@ -XX`  
     Subtracts XX from the current offset value.
@@ -118,23 +125,28 @@ It currently supports two different file structures:
 
     You can move the offset by using + or -:
 
-    `@ +20`  
+    `@ +20`
+    Adds 20 to the current offset.
+     
     `@ -20`
+    Subtracts 20 from the current offset.  
 
     You can move the offset to a specific offset by just writing a number without any + or - in front:
 
     `@ xA3`
-
+    `@ 0xb2`
+    With no prefix the offset will be moved to the given value.
     Writing `x` or `0x` signifies a hex value.  
-    With no number after the @ nothing will be changed. (Primarily for use with commands, see below).
-
+    
     `@`  
-
+    With no number after the @ nothing will be changed. (Primarily for use with commands, see below).
+    
 
   - ## read (Reading a value)
 
     `read` follows an `@` command at the beginning of the line.  
-    Can be combined with `search`.
+    Can be combined with `search`.  
+    The offset is automatically moved to after the type, when read. IE if you set an uint64, 8 is added to the current offset.
 
     `read type`  
     Reads the given offset as type. For supported types, see types.
@@ -162,25 +174,38 @@ It currently supports two different file structures:
     This would read the value at offset 18, and look for the value in a given list.  
     The type is defined in the list. (see lists section, for info on lists)
 
-  - ## Naming values
+    - ## Naming values
  
-    Can be added to any line containing read
+      Can be added to any line containing read
  
-    `"Name for the UI"`  
-    `'Name for the UI "Using apostrophes allow quotation marks!"'`
+      `"Name for the UI"`  
+      `'Name for the UI "Using apostrophes allow quotation marks!"'`
  
-    The text will be the name used for the value in the ui.
-    ' are not supported, and will shorten the name. If you want " in the name use ' to mark the text.
+      The text will be the name used for the value in the ui.
+      ' are not supported, and will shorten the name. If you want " in the name use ' to mark the text.
  
-    Detailed description:
+      Detailed description:
 
-    Any text added to a line, using the `read`-command, within "" or '' will be used as the values name, in the ui:
+      Any text added to a line, using the `read`-command, within "" or '' will be used as the values name, in the ui:
 
-    `@ 40 read float 'Name that descripes the values function'`
+      `@ 40 read float 'Name that descripes the values function'`
 
-    This can be added anywhere on the line. First, at the end, or in the middle, it doesn't matter.
+      This can be added anywhere on the line. First, at the end, or in the middle, it doesn't matter.
 
-    Without a name, the program will just name them "*Type* *number*", iterating the number up as it reads the same type.
+      Without a name, the program will just name them "*Type* *number*", iterating the number up as it reads the same type.
+
+    - ## value (Changing values in the script)
+   
+      `value XXXX`
+      By adding value *value* you can change the value directly from the script.
+      The new value will still need to be written, but it will be changed by default in the ui.
+      It needs to be a float or integer depending on the values type.
+
+    - ## hidden (Hiding values in ui)
+   
+      `hidden`
+      Makes the value not appear in the ui. It will still be read and changed using the above command. Can be viewed by pressing "show hidden" button.
+
 
   - ## search (Searching for values)
  
@@ -209,7 +234,7 @@ It currently supports two different file structures:
 
     Or to find one of a set of values from a list:
 
-    `@ search nameoflist`
+    `@ search name_of_list`
 
     You can search backwards by using `-search`.
  
@@ -220,13 +245,56 @@ It currently supports two different file structures:
 
     `@ 40 search mylist read mylist 'This value is a dropdown now'`  
     `@ 60 search mylist "The name can also be here" read uint16 cap 400`  
-    `"Or here" @ 80 read mylist -search uint8 200`  
+    `"Or here" @ 80 read mylist -search uint8 200`
+
+
+  - ## segment (Running a segment/function)
+
+    `@ segment name_of_segment`
+    Will run a segment by the name given. For information on segments read the segments section.  
+    Can be combined with search and repeat.
+
+
+  - ## repeat (Repeating a command)
+ 
+    `repeat x`
+    `end`
+    Will repeat the commands until `end` x times.
+    Setting x to -1 will make it repeat until the end of the file.
+    
+    `search xxxx repeat 5`
+    Will repeat a search 5 times.
+    A repeated search that goes to the end of a file, will reset to the search's starting offset.
+
+    `search xxxx read xxxx repeat -1`
+    Will repeat the search and read until the end of the file is reached.
+
+
+# Segments:
+
+  Segments are similar to functions in regular programming. It is used to create a reusable set of instructions.  
+  Segments can be created in seperate files or in scripts.  
+  If written in a script use `end`, on a seperate line, to mark the end of the list.
+
+  `segment: name_of_segment`
+  A segment starts with `segment:` on the first line, followed by the name of the segment.
+  This name is what you use to refer to it in scripts.  
+  
+  You can the write all the scripting commands you want. IE:  
+  `segment: example`  
+  `@ search uint32 12345`  
+  `@ read uint32 repeat 4`  
+  `end`  
+  This segment will look for 12345 in the file and read 4 uint32's right after each other when run.
+
 
 # Lists:
 
   Lists are used to create dropdowns, to limit the users ability to type in incorrect or corrupt values, or to select a known value.
+  Lists can be created in seperate files or in scripts.  
+  If written in a script use `end`, on a seperate line, to mark the end of the list.
 
-  `list: nameoflist`  
+  `list: name_of_list`  
   A list starts with `list:` on the first line, followed by the name of the list.  
   This name is what you use to refer to it in scripts.  
   The name CANNOT contain spaces.
@@ -235,8 +303,12 @@ It currently supports two different file structures:
   TYPE Defines what type the values of the list are. See below for supported types.
   TYPE Is case sensitive, and has to be all-caps.
   
-  `Name For UI: value`  
+  `Name_for_UI: value`  
   Every entry is structured "name of value: value". The name is shown in the dropdown. The value of the selected name will be written to the file.
+
+  `end`
+  If a list is inside a script, use the command `end` to mark the end of the list and continue the rest of the script.
+
   
 # Types:
 

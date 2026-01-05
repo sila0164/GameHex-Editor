@@ -3,6 +3,7 @@ import os
 import sys
 import json
 import datetime
+import traceback
 #Should never import from anything other than languages
 
 typelengths = {
@@ -84,7 +85,7 @@ class File:
             valueread = int.from_bytes(valuehex, byteorder=endian, signed=True)
         return valueread
 
-    def saveoffset(self, type: str, title: str, offset: int, endian: str, dict = None): # reads and saves a "stat" from a specific offset
+    def saveoffset(self, type: str, title: str, offset: int, endian: str, hide: bool, newvalue: int | float | None = None, dict = None): # reads and saves a "stat" from a specific offset
         id = str(self.stat_id)
         self.stat_id += 1
         self.stat[id] = {}
@@ -94,6 +95,8 @@ class File:
         self.stat[id]["value"] = str(self.readtype(type, offset, endian)) # reads value @ offset
         self.stat[id]['dict'] = dict
         self.stat[id]['endian'] = endian
+        self.stat[id]['hidden'] = hide
+        self.stat[id]["newvalue"] = newvalue
         if dict != None:
             if not str(self.stat[id]['value']) in self.stat[id]['dict']['list_reverse']: # If the value is not on the list, add it as 'Unknown'
                 self.stat[id]['dict']['list'][f'Unknown: ' + type] = str(self.stat[id]['value'])
@@ -179,7 +182,24 @@ class File:
 def dev(text):
     global settings
     if settings.devdebug == True:
-        print(f'DEV: {text}')
+        if text == '':
+            print('')
+        else:
+            print(f'DEV: {text}')
+
+def syserror(exc_type, exc_value, exc_tb):
+    print(flush=True)
+    if settings.is_exe == True:
+        date = datetime.datetime.now()
+        date_error = (f'ERROR-{date.year}{date.month}{date.day}-{date.hour}{date.minute}{date.second}.txt')
+        error_log = os.path.join(settings.root, date_error)
+        with open(settings.log, 'r', encoding='utf-8') as logfile:
+            error = logfile.read()
+        with open(error_log, 'w', encoding="utf-8") as errorlogfile:
+            errorlogfile.write(error)
+            errorlogfile.write("\n" + "=" * 80 + "\n")
+            errorlogfile.write(f"CRASH {datetime.datetime.now()}\n")
+            traceback.print_exception(exc_type, exc_value, exc_tb, file=errorlogfile) 
 
 def error(text):
     print(f'\n------------------------------------------------------------------\nERROR:\n{text}\n------------------------------------------------------------------\n', flush=True)
@@ -195,7 +215,10 @@ def error(text):
 def debug(text):
     global settings
     if settings.debug == True:
-        print(f'DEBUG: {text}')
+        if text == '':
+            print('')
+        else:
+            print(f'DEBUG: {text}')
 
 def cleanline(line: str) -> str:
     if '#' in line:
@@ -204,7 +227,7 @@ def cleanline(line: str) -> str:
     line = line.strip().replace('&enter&', '\n')
     return line
 
-def readlist(path, language: bool = True) -> tuple[str, dict]:
+def readlist(path, start: int | None, language: bool = False) -> tuple[str, dict]:
     """
     Docstring for readlist
     
@@ -213,10 +236,12 @@ def readlist(path, language: bool = True) -> tuple[str, dict]:
     :rtype: dict[string, string or int]
     """
     returndict = {}
-    if language == True:
+    if language == False:
         returndict['list'] = {}
         returndict['list_reverse'] = {}
     with open(path, encoding='utf-8') as f:
+        if start != None:
+            findline(f, start)
         line = f.readline()
         line = cleanline(line)
         try:
@@ -234,13 +259,16 @@ def readlist(path, language: bool = True) -> tuple[str, dict]:
                 line = f.readline()
                 line_number += 1
                 continue
+            if 'end' in line:
+                debug(f'List: Reached end at line {line_number}')
+                break
             try:
                 linewords = line.split(':', maxsplit=2)
                 firststring = linewords[0].strip()
                 laststring = linewords[1].strip()
                 if firststring == 'TYPE':
                     returndict[firststring] = laststring
-                elif language == False:
+                elif language == True:
                     returndict[int(firststring)] = laststring
                 else:
                     returndict['list'][firststring] = laststring
@@ -256,7 +284,7 @@ def getlocalizations(localization_folder_path: str) -> tuple[bool, dict]:
     for language in os.listdir(localization_folder_path):
         if language.endswith('.ghex'):
             language_path = os.path.join(localization_folder_path, language)
-            language_name, language_list = readlist(language_path, False)
+            language_name, language_list = readlist(language_path, start=None, language=True)
             if language_name != '':
                 localizations[language_name] = language_list
                 print(f'Localization: Loaded language: {language_name}')
@@ -286,10 +314,7 @@ class Settings:
             os.makedirs(self.localizationfolder, exist_ok=False)
             error('Settings: No Localizations. Please add at least one localization .ghex file to the "Localization"-folder.')
             sys.exit()
-        succes, self.languages = getlocalizations(self.localizationfolder)
-        if succes == False:
-            error('Settings: No languages found, shutting down. Please make sure there is at least one .ghex localization file in the Localization folder.')
-            sys.exit()
+
         # Default settings in case settings file cant be read
         self.language: str = 'English'
         self.background: str = '#222222'
@@ -304,6 +329,14 @@ class Settings:
         self.debug: bool = False
         self.devdebug: bool = False
         print('Settings: Default settings initialized')
+
+    def getlocalization(self) -> bool:
+        # Reading the Localization folder
+        succes, self.languages = getlocalizations(self.localizationfolder)
+        if succes == False:
+            error('Settings: No languages found, shutting down. Please make sure there is at least one .ghex localization file in the Localization folder.')
+            return False
+        return True
 
     def readsettings(self, force: bool = False) -> bool: # This then reads/creates the settings.json file
         self.settingsfile = os.path.join(self.root, 'Settings.json')
@@ -415,7 +448,10 @@ def initsettings() -> bool:
 #------------------------------------------------------------------------------------------
 # Everything after this is for translating and using the gh fileformats and scriptlanguage
 
-
+def findline(f, linenumber: int):
+    f.seek(0)
+    for lines in range(linenumber):
+        f.readline()
 
 def cleannumber(number: str) -> tuple[bool, int]:
     """
@@ -490,7 +526,40 @@ def cleanmultientry(string: str, separator:str=',') -> list:
         stringamount -= 1 
     return strings
 
-class Suites: # Finished - ADD Ability to have multiple scripts for same filetype.
+def readsegment(path: str, start: int | None) -> tuple[str, dict]:
+    returndict = {}
+    with open(path, encoding='utf-8') as f:
+        if start != None:
+            findline(f, start - 1)
+        line = f.readline()
+        line = cleanline(line)
+        try:
+            line_split = line.split(':')
+            name = line_split[1].strip()
+        except:
+            filename = os.path.basename(path)
+            error(f'Segment: {filename}: Could not read name on line 1:\n{line}\nSkipping segment...')
+            return '', returndict
+        line = f.readline()
+        line_number = 1
+        while line:
+            line = cleanline(line)
+            if line == '': # Ignores empty lines
+                line = f.readline()
+                line_number += 1
+                continue
+            if 'end' in line:
+                debug(f'Segment: Reached end at line {line_number}')
+                break
+            try:
+                returndict[line_number] = line
+            except:
+                error(f'Segment: {name} line {line_number}: incorrect syntax:\n{line}\nIgnoring line...')
+            line_number += 1
+            line = f.readline()
+    return name, returndict
+
+class Suites:
     def __init__(self):
         if settings == None:
             print('Suites: No Settings')
@@ -499,6 +568,7 @@ class Suites: # Finished - ADD Ability to have multiple scripts for same filetyp
         self.supported_extensions = {}
         self.loadedsuites = {}
         self.loadedlists = {}
+        self.loadedsegments = {}
         debug(f'Suites: Beginning read in {self.suites_folder}')
         for folder in os.listdir(self.suites_folder):
             path = os.path.join(self.suites_folder, folder)
@@ -517,8 +587,8 @@ class Suites: # Finished - ADD Ability to have multiple scripts for same filetyp
                 line = f.readline()
                 line = cleanline(line)
                 line_lower = line.lower()
-            if 'list' in line_lower:
-                name, dictionary = readlist(filepath)
+            if 'list' in line_lower and ':' in line_lower:
+                name, dictionary = readlist(filepath, start=None)
                 if name != '':
                     self.loadedlists[name] = dictionary
                     print(f'Suites: List Loaded: {name}')
@@ -528,7 +598,13 @@ class Suites: # Finished - ADD Ability to have multiple scripts for same filetyp
                 fileformats = cleanmultientry(line_split[1], separator='/')
                 for fileformat in fileformats:
                     self.supported_extensions[fileformat] = filepath
-                print(f'Suites: File Format Supported: {fileformat}')
+                    print(f'Suites: File Format Supported: {fileformat}')
+            elif 'segment' in line_lower and ':' in line_lower:
+                name, segment = readsegment(filepath, start=None)
+                if name != '':
+                    self.loadedsegments[name] = segment    
+                    print(f'Suites: Segment Loaded: {name}')
+                    dev(f'{segment}')
             else:
                 error(f'{file} is missing valid definition on line 1:\n {line}')
 
@@ -542,39 +618,50 @@ def readsuites() -> bool:
 
 class Script: # Unfinished (WIP)
     def __init__(self, file, suites):
-        self.dependencies = {}
-        self.current_offset = 0
-        self.count_unnamed = {}
-        self.file = file
-        self.suites = suites.supported_extensions
-        self.lists = suites.loadedlists
-        self.current_endian = 'little'
+        self.current_offset = 0 # The current offset that is used throughout a script to read at.
+        self.count_unnamed = {} # A dictionary used for dynamically naming unnamed values in a script.
+        self.file = file # The currently mounted file to be read
+        self.suites = suites.supported_extensions # The list of supported extensions from the Suites-class
+        self.lists = suites.loadedlists # The currently loaded lists from the Suites-class
+        self.segments = suites.loadedsegments # The currently loaded segments from the Suites-class
+        self.current_endian = 'little' # Defaults endian. Is used to read values and is changed in the endian related functions.
+        self.current_repeat = 0 # A value used to count the number of repeats down when a command is repeated
+        self.repeat_multiline = False # If the repeat command is used on its own, this flag is set to true. Allows reapeating multiple lines.
+        self.first_repeat = True # A flag used to allow repeats on combined search and read commands.
+        self.repeat_type_length = 0 # This is used if the repeat command is used with read. Moves the offset so that it doesnt just read the same value repeatedly
+        self.repeat_end = 0 # This is the offset at which a repeat will end, if set.
+        self.first_search_offset = -1 # This is used to keep track of the starting offset of a repeated search if it reaches the end of the file.
+        self.search_end_repeat = False # This is used to skip some commands when end of file is reached in a repeated search.
+        self.segment_active = False # This is a flag to change from reading lines in the file to reading line from a segment 
+        self.segment_line = 0 # keeps track of the current segments line
+        self.repeated_ui_names = {} # used to make multiple values with the same name have a number that itereates after the name.
 
     def run(self) -> tuple[bool, str]:
         if self.file.fullname in self.suites:
-            script = self.suites[self.file.fullname]
+            script_path = self.suites[self.file.fullname]
             debug(f'Script: Running script for filename "{self.file.fullname}":')
         else:
-            script = self.suites[self.file.extension]
+            script_path = self.suites[self.file.extension]
             debug(f'Script: Running script for extension "{self.file.extension}":')
-        debug(script + '\n')
+        debug(script_path + '\n')
         line_number = 2
-        with open(script, encoding='utf-8') as f:
+        with open(script_path, encoding='utf-8') as f:
             line = f.readline()
             line = f.readline() # Skips the first line as that is only needed for the suite read.
             while line:
                 line = cleanline(line)
-                debug(f'Line: {line}')
+                debug('')
+                debug(f'Line {line_number}: {line}')
                 if line == '': # Ignores empty lines
-                    debug('Script: skipping empty line\n')
+                    debug('Script: skipping empty line')
                     line_number += 1
                     line = f.readline()
                     continue
                 try:
                     ui_name, line = getname(line) # This splits the name from the rest of the line and makes the line lower case. Removes comments.
                 except:
-                    scriptname = os.path.basename(script)
-                    error(f'{scriptname} line {line_number}: Invalid Name\n{line}')    
+                    scriptname = os.path.basename(script_path)
+                    error(f'{scriptname} line {line_number}: Invalid Name: {line}')    
                 #ADD - Namecheck for duplicates here?
                 dev(f'Script: line {line_number}: {line}')
                 dev(f'Script: name: {ui_name}')
@@ -585,50 +672,124 @@ class Script: # Unfinished (WIP)
                     if succes == False:
                         error(message)
                         return False, message
+                    debug(f'{message}')
                     
-                    if 'repeat' in line:
-                    
+                    if 'repeat' in line and self.current_repeat == 0:
+                        succes, repeat_amount, message = self.repeat(line_as_list)
+                        debug(f'Script: {message}')
+                        self.current_repeat = repeat_amount
+                        self.repeat_start = line_number
+                        self.first_repeat = False
+
                     if 'search' in line:
                         succes1, endian = self.setendian(line_as_list)
                         succes2, message = self.search(offset, line_as_list, line, endian)
                         if succes1 == False or succes2 == False:
                             error(message)
                             return False, message
+                        debug(f'{message}')
                         offset = self.current_offset
+                        if self.current_repeat != 0:
+                            self.current_offset += 1 # If you just repeat a search from the same offset, it will just find the same value again and again.
 
                     if 'read' in line:
-                        succes1, endian = self.setendian(line_as_list)
-                        succes2, message = self.readvalue(offset, line_as_list, endian, ui_name)
-                        if succes1 == False or succes2 == False:
-                            error(message)
-                            return False, message
+                        if self.search_end_repeat != True:
+                            succes1, endian = self.setendian(line_as_list)
+                            succes2, message = self.readvalue(offset, line_as_list, endian, ui_name)
+                            if succes1 == False or succes2 == False:
+                                error(message)
+                                return False, message
+                            debug(f'{message}')
+                        else:
+                            self.search_end_repeat = False
+
+                    elif 'segment' in line:
+                        self.runsegment(line_as_list)
                          
                     else: # If no command is given it just moves the offset
                         self.current_offset = offset
-                        debug(f'Script: Moved offset to {self.current_offset}\n')
+                        debug(f'Script: Moved offset to {self.current_offset}')
+
+                elif 'segment:' in line_as_list:
+                    name, segment = readsegment(script_path, start=line_number)
+                    if name != '':
+                        self.segments[name] = segment    
+                        print(f'Script: Segment Loaded: {name}')
+                        dev(f'Segment name: {name} \nSegment:{segment}')
+                    line = f.readline()
+                    while line.lower().strip() != 'end':
+                        line = f.readline()
+
+                elif 'list:' in line_as_list:
+                    name, dictionary = readlist(script_path, start=line_number)
+                    if name != '':
+                        self.lists[name] = dictionary
+                        print(f'Script: List Loaded: {name}')
+                        dev(f'{dictionary}')
+                    line = f.readline()
+                    while line.lower().strip() != 'end':
+                        line = f.readline()
 
                 elif 'endian' in line_as_list:
                     self.setendian(line_as_list, set_global=True)
-                    debug(f'Script: Endian set to {self.current_endian}\n')
+                    debug(f'Script: Endian set to {self.current_endian}')
+
+                elif 'end' in line_as_list and self.repeat_multiline == True:
+                    self.repeat_end = line_number
+                    self.current_repeat -= 1
+                    dev(f'Script: Repeat end @ line {line_number}')
 
                 elif 'repeat' in line_as_list:
-                    repeat_amount = self.repeat(line_as_list, script=script)
+                    succes, repeat_amount, message = self.repeat(line_as_list)
+                    debug(f'Script: {message}')
+                    self.repeat_start = line_number
+                    self.current_repeat = repeat_amount
+                    self.repeat_multiline = True
+                    dev(f'Script: Repeat start @ line {line_number}')
                 
                 #elif line.startswith('segment'):
-                    
-                line_number += 1
-                line = f.readline()
+                if self.repeat_multiline == True and self.current_repeat != 0 and self.segment_active == False:
+                    if line_number == self.repeat_end:
+                        line_number = self.repeat_start
+                        dev(f'repeating multi line: Remaining: {self.current_repeat}')
+                        findline(f, line_number)
+                    line = f.readline()
+                    line_number += 1
+
+                elif self.repeat_multiline == False and self.current_repeat != 0 and self.segment_active == False:
+                    self.current_repeat -= 1
+                    dev(f'repeating single line: Remaining: {self.current_repeat}')
+                    if self.current_repeat == 0:
+                        dev(f'Stopping repeat')
+                        line = f.readline()
+                        self.first_repeat = True
+                
+                else:
+                    if self.segment_active == True:
+                        line = self.segment[self.segment_line]
+                        self.segment_line += 1
+                        if self.segment_line not in self.segment:
+                            self.segment_active = False
+                    else:
+                        line_number += 1
+                        self.repeat_multiline = False
+                        line = f.readline()
         print('Script: Finished')
         return True, 'Script ran successfully'
 
-    def readoffset(self, line: list) -> tuple[bool, int, str]: #ADD ability to read hex value and not just integers
+    def readoffset(self, line: list) -> tuple[bool, int, str]:
 
         if line[0] == '@':
             offset = line[1].lower()
         else:
             return False, -1, 'Syntax error at "@", check that there is a space after "@"'
         dev(f'offset is {offset}')
-        # ADD Check for hex value and that it can be converted to integer.
+
+        if 'repeat' in line and self.first_repeat == False and 'search' not in line: # If a read is repeated it adds the typelength to the offset
+            offset = self.current_offset + self.repeat_type_length
+            self.current_offset = offset
+            return True, offset, f'Repeat offset set to {offset}'
+
         if 'read' in offset or 'search' in offset: #If the offset is read it uses the general offset
             offset = self.current_offset
             dev(f'offset set to current {offset}')
@@ -666,32 +827,70 @@ class Script: # Unfinished (WIP)
 
         return True, offset, f'Offset set to {offset}'
 
-    def readvalue(self, offset: int, line: list, endian: str, ui_name: str) -> tuple[bool, str]: # Unfinished
+    def readvalue(self, offset: int, line: list, endian: str, ui_name: str) -> tuple[bool, str]: 
         readindex = line.index('read')
         read_type = line[readindex + 1]
-        dev(f'Script: Type/list to read: {read_type}\nEndian: {endian}')
+        dev(f'Script: Type/list to read: {read_type} - Endian: {endian}')
         list_from_file = None
+        
         if read_type in validtypes:
-            debug(f'Script: reading from type "{read_type}"\nEndian: {endian}\n')
+            debug(f'Script: reading as type: "{read_type}" - Endian: {endian}')
         elif read_type in self.lists:
             list_from_file = self.lists[read_type]
-            debug(f'Script: running from list "{read_type}"\nEndian: {endian}\n')
+            debug(f'Script: running from list "{read_type}" - Endian: {endian}')
             try:
                 read_type = list_from_file['TYPE']
             except:
                 return False, f'{read_type} is missing TYPE definition'
         else:
             return False, f'"{read_type}" is not a valid type or list'
+        
+        if offset + typelengths[read_type] > self.file.maxoffset: # Stops the program from reading beyond the end of the file.
+            self.current_repeat = 0 # Stops any repeats if they are running
+            return True, f'Reached end of file'
+        
         if ui_name == '':
             if read_type not in self.count_unnamed:
                 self.count_unnamed[read_type] = 0
             self.count_unnamed[read_type] += 1
             number = str(self.count_unnamed[read_type])
             ui_name = read_type + ' ' + number
-        self.file.saveoffset(read_type, ui_name, offset, endian, dict=list_from_file)
+        if ui_name not in self.repeated_ui_names:
+            self.repeated_ui_names[ui_name] = 1
+        if self.repeated_ui_names[ui_name] != 1:
+            ui_name = ui_name + str(self.repeated_ui_names[ui_name])
+        self.repeated_ui_names[ui_name] += 1
+
+        hide_value = False
+        if 'hidden' in line:
+            hide_value = True
+        
+        new_value = None
+        if 'value' in line: # Allows to change a value from the script.
+            value_index = line.index('value') + 1
+            if value_index in line:
+                new_value = line[value_index]
+            else:
+                return False, f'Value command is missing valid value'
+            if 'float' in read_type:
+                try:
+                    new_value = float(new_value)
+                except ValueError:
+                    return False, f'{new_value} is not a valid float'
+            elif 'int' in read_type:
+                try:
+                    new_value = int(new_value)
+                except ValueError:
+                    return False, f'{new_value} is not a valid integer'
+            debug(f'Presetting to {new_value}')
+
+        self.current_offset = offset + typelengths[read_type]
+
+        self.file.saveoffset(read_type, ui_name, offset, endian, hide=hide_value, newvalue=new_value, dict=list_from_file)
         return True, f'Read {read_type} @ {offset} as {ui_name}'
 
     def search(self, offset: int, line_as_list: list, line: str, endian: str) -> tuple[bool, str]:
+        
         backwards = False
         if '-search' in line_as_list:
             searchindex = line_as_list.index('-search')
@@ -704,6 +903,9 @@ class Script: # Unfinished (WIP)
         search_value[0] = line_as_list[searchindex + 2].replace(',', '')
         search_value[-1] = search_value[-1].split(' ')[0]
 
+        if self.current_repeat != 0 and self.first_search_offset < 0:
+            self.first_search_offset = offset
+
         #In case cap has been specified
         cap = None
         if 'cap' in line:
@@ -713,7 +915,7 @@ class Script: # Unfinished (WIP)
             if success == False:
                 return False, f'Invalid cap value: {capstring}'
             
-        debug(f'Script: Type to Search: {search_type}\nSearchvalue(s): {search_value}\nEndian: {endian}\nCap: {cap}\n')
+        debug(f'Script: Type to Search: {search_type} - Searchvalue(s): {search_value} - Endian: {endian} - Cap: {cap}\n')
 
         #much like the readvalue function, but searches for values instead.
         list_from_file = None
@@ -727,13 +929,19 @@ class Script: # Unfinished (WIP)
                 search_type = list_from_file['TYPE']
                 new_offset = self.file.dictsearch(list_from_file, search_type, offset, endian, backwards=backwards, cap=cap)
             except:
-                return False, f'"{search_type}" is missing TYPE definition'
+                return False, f'"{search_type}" is missing "TYPE" definition'
         else:
             return False, f'"{search_type}" is not a valid type or list'
         
         # The searchfunctions return 0 if they couldnt find the value.
-        if new_offset == 0:
+        if new_offset == 0 and self.current_repeat == 0:
             return False, f'Could not find {search_value} in file'
+        elif new_offset == 0 and self.current_repeat != 0:
+            self.current_repeat = 0
+            self.current_offset = self.first_search_offset
+            self.first_search_offset = -1
+            self.search_end_repeat = True
+            return True, f'Search Reached end of file, resetting to starting offset.'
         else:
             self.current_offset = new_offset
 
@@ -745,11 +953,10 @@ class Script: # Unfinished (WIP)
         succes, repeat_amount = cleannumber(repeat_amount)
         if succes == False:
             return False, 0, f'Invalid repeat value: {repeat_amount}'
+        if repeat_amount < -1:
+            return False, 0, f'Invalid repeat value: {repeat_amount}, repeat does not support negative values'
         
-        return True, repeat_amount, f'Repeating '
-            
-
-
+        return True, repeat_amount, f'Repeating {repeat_amount} times'
 
     def setendian(self, line_as_list: list, set_global: bool = False) -> tuple[bool, str]:
         if 'endian' not in line_as_list:
@@ -768,7 +975,16 @@ class Script: # Unfinished (WIP)
         else:
             return False, 'Script: Incorrect syntax for endian command'
         
-        
+    def runsegment(self, line_as_list: list) -> tuple[bool, str]:
+        segment_name = line_as_list[line_as_list.index('segment') + 1]
+        if segment_name in self.segments:
+            self.segment = self.segments[segment_name]
+            self.segment_active = True
+            self.segment_line = 0
+        else:
+            return False, f'Segment {segment_name} not found'
+
+        return True, f'Segment ran succesfully'     
 
 
 

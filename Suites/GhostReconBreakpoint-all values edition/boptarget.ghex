@@ -1,0 +1,27 @@
+file: DBBoPTargetConfig
+
+@ x1 read uint64 'File ID (Dont edit)'
+
+@ x9 read uint64 'External Reference 1'
+
+@ xe read uint32 'Unknown 1 (Im not sure what the value format is here)'
+
+@ x12 read uint32 'Unknown 2 (But I've given it a go)'
+
+@ x16 read uint32 'Unknown 3'
+
+@ x1a read uint32 'Unknown 4'
+
+@ x1e read uint32 'Unknown 5'
+
+@ x22 read uint32 'Unknown 6'
+
+@ x26 read uint8 'Unknown 7'
+
+@ x27 read uint8 'Unknown 8'
+
+@ x28 read uint8 'Unknown 9'
+
+@ x36 read uint64 'External Reference 2'
+
+@ x40 read uint64 'External Reference 3'
