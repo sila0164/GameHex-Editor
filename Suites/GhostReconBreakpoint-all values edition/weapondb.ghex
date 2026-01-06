@@ -72,7 +72,7 @@ segment: barrel
 @ read uint8 hidden value 0 'Spacer (Dont edit)'
 end
 
-@ search barrels segment barrel repeat -1
+@ search barrels segment barrel repeat 4
 
 
 @ search uint32 1176597217

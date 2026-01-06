@@ -629,13 +629,14 @@ class Script: # Unfinished (WIP)
         self.repeat_multiline = False # If the repeat command is used on its own, this flag is set to true. Allows reapeating multiple lines.
         self.first_repeat = True # A flag used to allow repeats on combined search and read commands.
         self.repeat_type_length = 0 # This is used if the repeat command is used with read. Moves the offset so that it doesnt just read the same value repeatedly
-        self.repeat_end = 0 # This is the offset at which a repeat will end, if set.
         self.first_search_offset = -1 # This is used to keep track of the starting offset of a repeated search if it reaches the end of the file.
-        self.search_end_repeat = False # This is used to skip some commands when end of file is reached in a repeated search.
+        self.search_reached_end_of_file = False # A flag used to disable functions when a search reaches end of the file.
         self.segment_active = False # This is a flag to change from reading lines in the file to reading line from a segment 
         self.segment_line = 0 # keeps track of the current segments line
         self.repeated_ui_names = {} # used to make multiple values with the same name have a number that itereates after the name.
         self.skip_until_end = False # used to skip lines that are part of a segment or list in a script
+        self.segment_buffered_line = None # Used to return to the line when a segment is repeated.
+        self.repeat_active = False
 
     def run(self) -> tuple[bool, str]:
         if self.file.fullname in self.suites:
@@ -652,6 +653,7 @@ class Script: # Unfinished (WIP)
             while line:
                 # This is in case we are reading a list or segment. This is done in a seperate function and they return them as a dictionary. We need to skip the lines of the list/segment.
                 if self.skip_until_end == True and line.lower().strip() == 'end': #when end is reached continue normal script running.
+                    dev('Loop end has been reached')
                     self.skip_until_end = False
                     line = f.readline()
                     line_number += 1
@@ -661,10 +663,16 @@ class Script: # Unfinished (WIP)
                     line = f.readline()
                     line_number += 1
                     continue
+
                 # This is when the line gets read (kind of a sorting system)
+                buffered_line = line # This is used when a segment is run repeatedly to return to the line that is repeated.
                 line = cleanline(line)
-                debug('')
-                debug(f'Line {line_number}: {line}')
+                if self.segment_active == False:
+                    debug('')
+                    debug(f'Line {line_number}: {line}')
+                else: 
+                    debug('')
+                    debug(f'Segment line {self.segment_line - 1}: {line}')
 
                 if line == '': # Ignores empty lines
                     debug('Script: skipping empty line')
@@ -686,6 +694,15 @@ class Script: # Unfinished (WIP)
                 line_as_list = line.lower().split(' ') 
                 offset = None
 
+                if self.search_reached_end_of_file == True:
+                    line_number += 1
+                    line = f.readline()
+                    self.search_reached_end_of_file = False
+                    self.segment_active = False
+                    self.repeat_active = False
+                    self.current_repeat = 0
+                    continue
+
                 if line[0] == '@': # Check for @ at the beginning of line
                     succes, offset, message = self.readoffset(line_as_list) # Read the offset and move it
                     if succes == False:
@@ -693,12 +710,13 @@ class Script: # Unfinished (WIP)
                         return False, message
                     debug(f'{message}')
                     
-                    if 'repeat' in line and self.current_repeat == 0: # if the line contains repeat, set the program to repeat it repeat_amount of times.
+                    if 'repeat' in line and self.repeat_active == False: # if the line contains repeat, set the program to repeat it repeat_amount of times.
                         succes, repeat_amount, message = self.repeat(line_as_list)
                         debug(f'Script: {message}')
                         self.current_repeat = repeat_amount
                         self.repeat_start = line_number
                         self.first_repeat = False
+                        self.repeat_active = True
 
                     if 'search' in line: # if search is in the line, run the search function and move the offset to the result.
                         succes1, endian = self.setendian(line_as_list)
@@ -708,29 +726,27 @@ class Script: # Unfinished (WIP)
                             return False, message
                         debug(f'{message}')
                         offset = self.current_offset
-                        if self.current_repeat != 0 and 'read' not in line_as_list and 'segment' not in line_as_list:
-                            dev('im here')
-                            self.current_offset += 1 # If you just repeat a search from the same offset, it will just find the same value again and again.
 
-                    if 'read' in line: # Runs the read dunction that reads and sets the value for the ui to use later.
-                        if self.search_end_repeat != True:
-                            succes1, endian = self.setendian(line_as_list)
-                            succes2, message = self.readvalue(offset, line_as_list, endian, ui_name)
-                            if succes1 == False or succes2 == False:
-                                error(message)
-                                return False, message
-                            debug(f'{message}')
-                        else:
-                            self.search_end_repeat = False
+                    if 'read' in line: # Runs the read function, that reads and sets the value for the ui to use later.
+                        succes1, endian = self.setendian(line_as_list)
+                        succes2, message = self.readvalue(offset, line_as_list, endian, ui_name)
+                        if succes1 == False or succes2 == False:
+                            error(message)
+                            return False, message
+                        debug(f'{message}')
 
-                    elif 'segment' in line: # run a segment
-                        self.runsegment(line_as_list)
-                         
-                    else: # If no command is given it just moves the offset
+                    if 'segment' in line: # run a segment
+                        success, message = self.runsegment(line_as_list, buffered_line)
+                        if success == False:
+                            error(message)
+                            return False, message
+                        debug(message)
+
+                    if 'segment' not in line and 'read' not in line and 'search' not in line: # Changes the offset if no command is given
+                        debug(f'No commands detected. Setting offset to: {offset}')
                         self.current_offset = offset
-                        debug(f'Script: Moved offset to {self.current_offset}')
                 
-                # @ commands are done here and the following commands are seperate.
+                # '@' commands are done here and the following commands are seperate.
 
                 # Creates and saves a segment to be run later
                 elif 'segment:' in line_as_list: 
@@ -756,12 +772,6 @@ class Script: # Unfinished (WIP)
                     self.setendian(line_as_list, set_global=True)
                     debug(f'Script: Endian set to {self.current_endian}')
 
-                # This stops a repeated sequence of instructions... Not sure this is needed any more though. reapeating a sequence is probably the best way forward and gives the same result.
-                elif 'end' in line_as_list and self.repeat_multiline == True:
-                    self.repeat_end = line_number
-                    self.current_repeat -= 1
-                    dev(f'Script: Repeat end @ line {line_number}')
-
                 # This repeats a sequence of instructions
                 elif 'repeat' in line_as_list:
                     succes, repeat_amount, message = self.repeat(line_as_list)
@@ -773,32 +783,40 @@ class Script: # Unfinished (WIP)
                 
                 #No more commands. This is logic for repeat loops.
                 if self.repeat_multiline == True and self.current_repeat != 0 and self.segment_active == False:
-                    if line_number == self.repeat_end:
+                    if line == 'end':
                         line_number = self.repeat_start
                         dev(f'repeating multi line: Remaining: {self.current_repeat}')
                         findline(f, line_number)
                     line = f.readline()
                     line_number += 1
+                    continue
 
-                elif self.repeat_multiline == False and self.current_repeat != 0 and self.segment_active == False:
+                if self.repeat_multiline == False and self.current_repeat != 0 and self.segment_active == False:
                     self.current_repeat -= 1
+                    if 'search' in line_as_list and 'read' not in line_as_list:
+                        self.current_offset = self.current_offset + 1
                     dev(f'repeating single line: Remaining: {self.current_repeat}')
+
                     if self.current_repeat == 0:
                         dev(f'Stopping repeat')
                         line = f.readline()
                         self.first_repeat = True
+                    continue
                 
-                #This is the default behaviour with no repeat. If a segment is active it reads from the segment dictionary, not the file.
+                #This is the default behaviour. If a segment is active it reads from the segment dictionary, not the file.
+                if self.segment_active == True and self.segment_line not in self.segment:
+                    dev('Setting self.segment_active to False')
+                    self.segment_active = False
+                    line = self.segment_buffered_line
+                    dev(line)
+                elif self.segment_active == True:
+                    line = self.segment[self.segment_line]
+                    self.segment_line += 1
                 else:
-                    if self.segment_active == True:
-                        line = self.segment[self.segment_line]
-                        self.segment_line += 1
-                        if self.segment_line not in self.segment:
-                            self.segment_active = False
-                    else:
-                        line_number += 1
-                        self.repeat_multiline = False
-                        line = f.readline()
+                    line_number += 1
+                    self.repeat_multiline = False
+                    self.repeat_active = False
+                    line = f.readline()
         print('Script: Finished')
         return True, 'Script ran successfully'
 
@@ -881,21 +899,18 @@ class Script: # Unfinished (WIP)
             number = str(self.count_unnamed[read_type])
             ui_name = read_type + ' ' + number
         if ui_name not in self.repeated_ui_names:
-            self.repeated_ui_names[ui_name] = 1
+            self.repeated_ui_names[ui_name] = 0
+        self.repeated_ui_names[ui_name] += 1
         if self.repeated_ui_names[ui_name] != 1:
             ui_name = ui_name + ' ' + str(self.repeated_ui_names[ui_name])
-        self.repeated_ui_names[ui_name] += 1
 
         hide_value = False
         if 'hidden' in line:
             hide_value = True
         
         new_value = None
-        print(line)
         if 'value' in line: # Allows to change a value from the script.
             value_index = line.index('value') + 1
-            print(value_index)
-            print(line[value_index])
             try:
                 new_value = line[value_index]
             except:
@@ -933,6 +948,7 @@ class Script: # Unfinished (WIP)
 
         if self.current_repeat != 0 and self.first_search_offset < 0: # Sets first_search_offset if needed to revert (end of file)
             self.first_search_offset = offset
+            dev(f'Set return offset {self.first_search_offset}')
 
         #In case cap has been specified
         cap = None
@@ -966,7 +982,9 @@ class Script: # Unfinished (WIP)
             self.current_repeat = 0
             self.current_offset = self.first_search_offset
             self.first_search_offset = -1
-            self.search_end_repeat = True
+            self.search_reached_end_of_file = True
+            self.repeat_active = False
+            self.segment_active = False
             return True, f'Search Reached end of file, resetting to starting offset.'
         else:
             self.current_offset = new_offset
@@ -1001,8 +1019,9 @@ class Script: # Unfinished (WIP)
         else:
             return False, 'Script: Incorrect syntax for endian command'
         
-    def runsegment(self, line_as_list: list) -> tuple[bool, str]:
+    def runsegment(self, line_as_list: list, buffered_line: str) -> tuple[bool, str]:
         segment_name = line_as_list[line_as_list.index('segment') + 1]
+        self.segment_buffered_line = buffered_line
         if segment_name in self.segments:
             self.segment = self.segments[segment_name]
             self.segment_active = True
@@ -1010,7 +1029,7 @@ class Script: # Unfinished (WIP)
         else:
             return False, f'Segment {segment_name} not found'
 
-        return True, f'Segment ran succesfully'     
+        return True, f'Segment started succesfully'     
 
 
 
