@@ -23,11 +23,13 @@ It is for the most part not case sensitive.
 
 It does for the most part not care were in the line commands are placed.
 
-It currently supports two different file structures:
+It currently supports these file structures:
 
-- Scripts: Files that read through a file.  
+- Scripts: Files that read through a file, saving values for editing.  
 
-- Lists: Files that contain names for values. Used to create dropdowns to limit what the user is allowed to input.
+- Lists: Files that contain names for values. Used to create dropdowns to limit what the user is allowed to input. These are loaded on launch and can be used in any script.
+
+- Segments: Files that contain a function or array of values. These are loaded on launch and can be used in any script.
 
 # Scripts:
 
@@ -39,7 +41,7 @@ It currently supports two different file structures:
 
   You can add as many spaces as you like.  
 
-  The order of commands does not matter.  
+  The order of commands in a line does not matter(except for the "@" functions).  
 
   The parameters of commands have to follow the command.
 
@@ -98,7 +100,13 @@ It currently supports two different file structures:
   `endian little`  
   `endian big`  
 
-  The command endian can be added anywhere on a line containing other commands to change it for just that command, or be added to a line on its own to change the endian for all the following commands. Has to be followed by either `little` or `big`
+  The command endian can be on its own will change the endian for all the following commands. Has to be followed by either `little` or `big`
+
+
+- # end
+
+  `end`
+  The end command tells the program when a repeat, segment or list ends, when these are added directly in a script.
   
 
 - # Commands
@@ -192,14 +200,23 @@ It currently supports two different file structures:
 
       This can be added anywhere on the line. First, at the end, or in the middle, it doesn't matter.
 
-      Without a name, the program will just name them "*Type* *number*", iterating the number up as it reads the same type.
+      Without a name, the program will just name them "*Type* *number*", iterating the number up as it reads the same type.  
+      Multiple values of the same name, will have an iterating number after it.
 
-    
+    - ## endian (Changing the endian)
+
+      All scripts default to little endian. You can change it using the following command:
+
+      `endian little`  
+      `endian big`  
+
+      The command endian can be added anywhere on a line containing `read`. Has to be followed by either `little` or `big`
+        
     - ## removable
 
       `removable`  
-      Adding removable to a read command, makes the value deleteable from the ui.  
-      This will delete the bytes in the file. When removed, it can be added it back in again with a button.  
+      Adding removable to a read command, makes the value deleteable from a button in the ui.  
+      This will delete the bytes in the file. When removed, it can be added back in again with a button.  
 
     - ## value (Changing values in the script)
    
@@ -216,7 +233,7 @@ It currently supports two different file structures:
     - ## node
 
       `node name_of_node`  
-      Adds the read value to a node in the ui. For information about nodes read the nodes section.
+      Adds the read value to a node in the ui. For information about creating nodes read the nodes section.
 
 
   - ## search (Searching for values)
@@ -233,10 +250,6 @@ It currently supports two different file structures:
  
     `-search xyz`  
     Searches backwards/reverse from the starting point.
- 
-    `cap value`  
-    Caps the search to value. The search will stop at offset + cap. Only supports Integers.  
-    If the search is backwards/in reverse the cap has to be negative.
  
     Examples:
     
@@ -259,14 +272,60 @@ It currently supports two different file structures:
     `@ 60 search mylist "The name can also be here" read uint16 cap 400`  
     `"Or here" @ 80 read mylist -search uint8 200`
 
+    - ## cap
+
+      `cap value`  
+      Caps the search to *value*. The search will stop when it reaches offset + cap. Only supports Integers.  
+      If the search is backwards/in reverse the cap has to be negative.
+
+    - ## endian (Changing the endian)
+
+      All scripts default to little endian. You can change it using the following command:
+
+      `endian little`  
+      `endian big`  
+
+      The command endian can be added anywhere on a line containing `search`. Has to be followed by either `little` or `big`
+
 
   - ## segment (Running a segment/function)
 
-    `@ segment name_of_segment "segment_name_for_ui" removable`
+    `@ segment name_of_segment`
     Will run a segment by the name given. For information on segments read the segments section.  
-    Can be named in the ui. This will group every stat from the segment into a treenode.  `
     Can be used with the `removable` command. This will create the segment as a node, with all the values of the segment in it. A removable segment cannot contain search commands.  
-    Can be combined with search and repeat in the same line.
+    Can be combined with search and repeat in the same line.  
+
+    - ## Naming segments
+ 
+      Can be added to any line containing segment
+ 
+      `"Name for the UI"`  
+      `'Name for the UI "Using apostrophes allow quotation marks!"'`
+ 
+      The text will be the name used for the segment in the ui.
+      ' are not supported, and will shorten the name. If you want " in the name use ' to mark the text.
+ 
+      Detailed description:
+
+      Any text added to a line, using the `segment`-command, within "" or '' will be used as the segments name, in the ui:
+
+      `@ 40 segment name_of_segment 'Name that descripes the values function'`
+
+      This can be added anywhere on the line. First, at the end, or in the middle, it doesn't matter.
+
+      Without a name, the program will just name it "Segment *number*", iterating the number up as it creates each segment.  
+      Multiple segments of the same name, will have an iterating number after it.
+
+    - ## removable
+
+      `removable`  
+      Adding removable to a segment, makes the entire segment deleteable from a button in the ui.  
+      This will delete the bytes in the file. When removed, it can be added back in again with a button.  
+
+    - ## node
+
+      `node name_of_node`  
+      Adds the read value to a node in the ui. For information about creating nodes read the nodes section.
 
 
   - ## repeat (Repeating a command)
@@ -291,6 +350,8 @@ It currently supports two different file structures:
   If written in a script use `end`, on a seperate line, to mark the end of the list.  
   Segments containing search commands cannot be removed or added.  
 
+  A removable segment cannot contain search commands.  
+
   `segment: name_of_segment`
   A segment starts with `segment:` on the first line, followed by the name of the segment.
   This name is what you use to refer to it in scripts.  
@@ -301,6 +362,43 @@ It currently supports two different file structures:
   `@ read uint32 repeat 4`  
   `end`  
   This segment will look for 12345 in the file and read 4 uint32's right after each other when run.
+
+
+# Nodes:
+
+  Nodes are used to customize where the different values go when added, in the ui. Without any specified, the program will create them if/when needed.
+
+  `node: name_for_adding_in_code "name_for_ui"`
+
+  A node can be nested within another node by using the `node` command.
+
+  `node: name_for_adding_in_code "name_for_ui" node already_existing_node`
+
+  - ## Naming nodes
+ 
+    Can be added to any line containing `node:`
+
+    `"Name for the UI"`  
+    `'Name for the UI "Using apostrophes allow quotation marks!"'`
+
+    The text will be the name used for the node in the ui.
+    ' are not supported, and will shorten the name. If you want " in the name use ' to mark the text.
+
+    Detailed description:
+
+    Any text added to a line, using the `node:`-command, within "" or '' will be used as the nodes name, in the ui:
+
+    `node: name_for_adding_in_code "name_for_ui"`
+
+    This can be added anywhere on the line. First, at the end, or in the middle, it doesn't matter.
+
+    Without a name, the program will just name it "Node *number*", iterating the number up as it creates nodes.  
+    Multiple nodes of the same name, will have an iterating number after it.
+
+  - ## node
+
+    `node name_of_node`  
+    Adds the node to an already existing node in the ui.
 
 
 # Lists:

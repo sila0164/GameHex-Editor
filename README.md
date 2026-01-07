@@ -10,11 +10,10 @@ It was created due to me getting into hex editing encrypted gamefiles, and findi
 It uses a very simple scripting language, allowing people to create "Suites", for specific games/programs/files.  
 You create scripts that the program then ties to an extension or even a full filename, if you need it to be very specific.
 
-When the user then opens a file with an extension the program has a script for, it creates a simple overview of all the read values, which can then be edited and written to the file.  
+When the user then opens a file with an extension or filename the program has a script for, it creates a simple overview of all the read values, which can then be edited and written to the file.  
 It can also use lists of known values to create dropdowns.
 
 The program is alpha, not very feature-rich, and it is my first "proper" program. It is currently very specificaly made for what I needed it to do, so I'm sure there's a lot that could be added to make it much more useful for other tasks.  
-I imagine Python is a bad/slow choice, but it is what I've ended up learning, and it ultimately works well.
 
 ---
 
@@ -34,8 +33,7 @@ I imagine Python is a bad/slow choice, but it is what I've ended up learning, an
 
 ------
   
-Please include the log, if you report a bug, aswell as a description of what you were trying to do, what you expected to happen and what actually happened.
-
+Please include the log or error file if you report a bug, aswell as a description of what you were trying to do, what you expected to happen and what actually happened.
 
 For an example suite, you can check out my Ghost Recon Breakpoint one on nexus:  
 TBD
