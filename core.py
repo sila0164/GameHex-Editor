@@ -61,6 +61,7 @@ class File:
         self.name, tempextension = os.path.splitext(self.fullname)
         self.extension = tempextension.lstrip('.') 
         self.stat = {} # a dictionary of all added stats for each file
+        self.parent = {} # a dictionary for saving what parent values belong to.
         self.stat_id = 0
         self.hasbeenwritten = False
 
@@ -85,7 +86,7 @@ class File:
             valueread = int.from_bytes(valuehex, byteorder=endian, signed=True)
         return valueread
 
-    def saveoffset(self, type: str, title: str, offset: int, endian: str, hide: bool, newvalue: int | float | None = None, dict = None): # reads and saves a "stat" from a specific offset
+    def saveoffset(self, type: str, title: str, offset: int, endian: str, hide: bool, removable: bool, newvalue: int | float | None, dict: dict | None, parent: str | None): # reads and saves a "stat" from a specific offset
         id = str(self.stat_id)
         self.stat_id += 1
         self.stat[id] = {}
@@ -97,6 +98,8 @@ class File:
         self.stat[id]['endian'] = endian
         self.stat[id]['hidden'] = hide
         self.stat[id]["newvalue"] = newvalue
+        self.stat[id]["removable"] = removable
+        self.stat[id]['parent'] = parent
         if dict != None:
             if not str(self.stat[id]['value']) in self.stat[id]['dict']['list_reverse']: # If the value is not on the list, add it as 'Unknown'
                 self.stat[id]['dict']['list'][f'Unknown: ' + type] = str(self.stat[id]['value'])
@@ -178,6 +181,11 @@ class File:
                 else:
                     dev(f'File: Skipping {id_as_int} - {id['title']}, no new value')
         self.hasbeenwritten = True
+
+    def saveparent(self, name, removable, parent):
+        self.parent[name] = {}
+        self.parent[name]['removable'] = removable
+        self.parent[name]['parent'] = parent
 
 def dev(text):
     global settings
@@ -526,8 +534,9 @@ def cleanmultientry(string: str, separator:str=',') -> list:
         stringamount -= 1 
     return strings
 
-def readsegment(path: str, start: int | None) -> tuple[str, dict]:
+def readsegment(path: str, start: int | None) -> tuple[bool, str, dict]:
     returndict = {}
+    contains_search = False
     with open(path, encoding='utf-8') as f:
         if start != None:
             findline(f, start - 1)
@@ -539,7 +548,7 @@ def readsegment(path: str, start: int | None) -> tuple[str, dict]:
         except:
             filename = os.path.basename(path)
             error(f'Segment: {filename}: Could not read name on line 1:\n{line}\nSkipping segment...')
-            return '', returndict
+            return False, '', returndict
         line = f.readline()
         line_number = 1
         while line:
@@ -551,13 +560,18 @@ def readsegment(path: str, start: int | None) -> tuple[str, dict]:
             if line.lower().strip() == 'end':
                 debug(f'Segment: Reached end at line {line_number}')
                 break
+            if 'search' in line:
+                contains_search = True
+            if 'removable' in line and contains_search == True:
+                error(f'Segment: {name} line {line_number}: A segment cannot have both removable and search commands in them.')
+                return False, '', returndict
             try:
                 returndict[line_number] = line
             except:
                 error(f'Segment: {name} line {line_number}: incorrect syntax:\n{line}\nIgnoring line...')
             line_number += 1
             line = f.readline()
-    return name, returndict
+    return True, name, returndict
 
 class Suites:
     def __init__(self):
@@ -600,8 +614,10 @@ class Suites:
                     self.supported_extensions[fileformat] = filepath
                     print(f'Suites: File Format Supported: {fileformat}')
             elif 'segment' in line_lower and ':' in line_lower:
-                name, segment = readsegment(filepath, start=None)
-                if name != '':
+                success, name, segment = readsegment(filepath, start=None)
+                if success == False:
+                    error(f'Invalid segment: {file}. Skipping...')
+                elif name != '':
                     self.loadedsegments[name] = segment    
                     print(f'Suites: Segment Loaded: {name}')
                     dev(f'{segment}')
@@ -636,7 +652,9 @@ class Script: # Unfinished (WIP)
         self.repeated_ui_names = {} # used to make multiple values with the same name have a number that itereates after the name.
         self.skip_until_end = False # used to skip lines that are part of a segment or list in a script
         self.segment_buffered_line = None # Used to return to the line when a segment is repeated.
-        self.repeat_active = False
+        self.repeat_active = False # Used to stop reopeats when 0 is reached.
+        self.nodes = {} # A dictionary of the nodes to be created in the ui.
+        self.current_node = 'none' #Keeps track of the currently active node (if any)
 
     def run(self) -> tuple[bool, str]:
         if self.file.fullname in self.suites:
@@ -651,6 +669,7 @@ class Script: # Unfinished (WIP)
             line = f.readline()
             line = f.readline() # Skips the first line as that is only needed for the suite read.
             while line:
+                self.current_node = 'none' # Resets the node for each line
                 # This is in case we are reading a list or segment. This is done in a seperate function and they return them as a dictionary. We need to skip the lines of the list/segment.
                 if self.skip_until_end == True and line.lower().strip() == 'end': #when end is reached continue normal script running.
                     dev('Loop end has been reached')
@@ -681,6 +700,7 @@ class Script: # Unfinished (WIP)
                     continue
 
                 # This splits the name from the rest of the line and makes the line lower case. Removes comments.
+                ui_name = ''
                 try:
                     ui_name, line = getname(line) 
                 except:
@@ -691,7 +711,8 @@ class Script: # Unfinished (WIP)
                 dev(f'Script: name: {ui_name}')
 
                 # splits the line into a list for easier reading
-                line_as_list = line.lower().split(' ') 
+                line_as_list = line.split(' ') 
+                line_as_list_lower = line.lower().split(' ') 
                 offset = None
 
                 if self.search_reached_end_of_file == True:
@@ -704,39 +725,45 @@ class Script: # Unfinished (WIP)
                     continue
 
                 if line[0] == '@': # Check for @ at the beginning of line
-                    succes, offset, message = self.readoffset(line_as_list) # Read the offset and move it
+                    succes, offset, message = self.readoffset(line_as_list_lower) # Read the offset and move it
                     if succes == False:
                         error(message)
                         return False, message
                     debug(f'{message}')
-                    
-                    if 'repeat' in line and self.repeat_active == False: # if the line contains repeat, set the program to repeat it repeat_amount of times.
-                        succes, repeat_amount, message = self.repeat(line_as_list)
+
+                    if 'node' in line_as_list_lower:
+                        try:
+                            self.current_node = line_as_list[line_as_list_lower.index('node') + 1]
+                        except:
+                            return False, f'"node" command has incorrect/nonexisting name or is missing a name'
+
+                    if 'repeat' in line_as_list_lower and self.repeat_active == False: # if the line contains repeat, set the program to repeat it repeat_amount of times.
+                        succes, repeat_amount, message = self.repeat(line_as_list_lower)
                         debug(f'Script: {message}')
                         self.current_repeat = repeat_amount
                         self.repeat_start = line_number
                         self.first_repeat = False
                         self.repeat_active = True
 
-                    if 'search' in line: # if search is in the line, run the search function and move the offset to the result.
-                        succes1, endian = self.setendian(line_as_list)
-                        succes2, message = self.search(offset, line_as_list, line, endian)
+                    if 'search' in line_as_list_lower: # if search is in the line, run the search function and move the offset to the result.
+                        succes1, endian = self.setendian(line_as_list_lower)
+                        succes2, message = self.search(offset, line_as_list_lower, line, endian)
                         if succes1 == False or succes2 == False:
                             error(message)
                             return False, message
                         debug(f'{message}')
                         offset = self.current_offset
 
-                    if 'read' in line: # Runs the read function, that reads and sets the value for the ui to use later.
-                        succes1, endian = self.setendian(line_as_list)
-                        succes2, message = self.readvalue(offset, line_as_list, endian, ui_name)
+                    if 'read' in line_as_list_lower: # Runs the read function, that reads and sets the value for the ui to use later.
+                        succes1, endian = self.setendian(line_as_list_lower)
+                        succes2, message = self.readvalue(offset, line_as_list_lower, endian, ui_name)
                         if succes1 == False or succes2 == False:
                             error(message)
                             return False, message
                         debug(f'{message}')
 
                     if 'segment' in line: # run a segment
-                        success, message = self.runsegment(line_as_list, buffered_line)
+                        success, message = self.runsegment(line_as_list, line_as_list_lower, buffered_line, ui_name)
                         if success == False:
                             error(message)
                             return False, message
@@ -749,9 +776,11 @@ class Script: # Unfinished (WIP)
                 # '@' commands are done here and the following commands are seperate.
 
                 # Creates and saves a segment to be run later
-                elif 'segment:' in line_as_list: 
+                elif 'segment:' in line_as_list_lower: 
                     self.skip_until_end = True
-                    name, segment = readsegment(script_path, start=line_number)
+                    success, name, segment = readsegment(script_path, start=line_number)
+                    if success == False:
+                        return False, 'Script: Invalid Segment'
                     if name != '':
                         self.segments[name] = segment    
                         print(f'Script: Segment Loaded: {name}')
@@ -759,7 +788,7 @@ class Script: # Unfinished (WIP)
                         debug(f'{segment}')
 
                 # Creates and saves a list to be used later
-                elif 'list:' in line_as_list:
+                elif 'list:' in line_as_list_lower:
                     self.skip_until_end = True
                     name, dictionary = readlist(script_path, start=line_number)
                     if name != '':
@@ -767,14 +796,40 @@ class Script: # Unfinished (WIP)
                         print(f'Script: List Loaded: {name}')
                         dev(f'{dictionary}')
 
+                # Creates and saves a note that values and segments can be added to.
+                elif 'node:' in line_as_list_lower and 'end' not in line_as_list_lower:
+                    node_name = line_as_list[line_as_list_lower.index('node:') + 1]
+                    if ui_name == '':
+                        if 'Node' not in self.count_unnamed:
+                            self.count_unnamed['Node'] = 0
+                        self.count_unnamed['Node'] += 1
+                        number = str(self.count_unnamed['Node'])
+                        ui_name = 'Node' + ' ' + number
+                    if ui_name not in self.repeated_ui_names:
+                        self.repeated_ui_names[ui_name] = 0
+                    self.repeated_ui_names[ui_name] += 1
+                    if self.repeated_ui_names[ui_name] != 1:
+                        ui_name = ui_name + ' ' + str(self.repeated_ui_names[ui_name])
+                    parent = None
+                    if 'node' in line_as_list_lower:
+                        try:
+                            self.current_node = line_as_list[line_as_list_lower.index('node') + 1]
+                            parent = self.current_node
+                        except:
+                            return False, f'"node" command is missing a name after it'
+
+                    self.file.saveparent(ui_name, removable=False, parent=parent)
+                    self.nodes[node_name] = ui_name
+                    self.current_node = node_name
+
                 # Sets the global endian if endian is in the line and alone. 
-                elif 'endian' in line_as_list:
-                    self.setendian(line_as_list, set_global=True)
+                elif 'endian' in line_as_list_lower:
+                    self.setendian(line_as_list_lower, set_global=True)
                     debug(f'Script: Endian set to {self.current_endian}')
 
                 # This repeats a sequence of instructions
-                elif 'repeat' in line_as_list:
-                    succes, repeat_amount, message = self.repeat(line_as_list)
+                elif 'repeat' in line_as_list_lower:
+                    succes, repeat_amount, message = self.repeat(line_as_list_lower)
                     debug(f'Script: {message}')
                     self.repeat_start = line_number
                     self.current_repeat = repeat_amount
@@ -927,9 +982,20 @@ class Script: # Unfinished (WIP)
                     return False, f'{new_value} is not a valid integer'
             debug(f'Presetting to {new_value}')
 
+        parent = None
+        if self.segment_active == True:
+            parent = self.segment_name
+
+        if self.current_node != 'none':
+            parent = self.nodes[self.current_node]
+
+        removable = False
+        if 'removable' in line:
+            removable = True
+
         self.current_offset = offset + typelengths[read_type]
 
-        self.file.saveoffset(read_type, ui_name, offset, endian, hide=hide_value, newvalue=new_value, dict=list_from_file)
+        self.file.saveoffset(read_type, ui_name, offset, endian, hide=hide_value, removable = removable, newvalue=new_value, dict=list_from_file, parent=parent)
         return True, f'Read {read_type} @ {offset} as {ui_name}'
 
     def search(self, offset: int, line_as_list: list, line: str, endian: str) -> tuple[bool, str]:
@@ -1019,13 +1085,35 @@ class Script: # Unfinished (WIP)
         else:
             return False, 'Script: Incorrect syntax for endian command'
         
-    def runsegment(self, line_as_list: list, buffered_line: str) -> tuple[bool, str]:
-        segment_name = line_as_list[line_as_list.index('segment') + 1]
+    def runsegment(self, line_as_list: list, line_as_list_lower: list, buffered_line: str, ui_name: str) -> tuple[bool, str]:
+        segment_name = line_as_list[line_as_list_lower.index('segment') + 1]
         self.segment_buffered_line = buffered_line
+
+        removable = False
+        if 'removable' in line_as_list_lower:
+            removable = True
+        
+        if ui_name == '':
+            if 'Segment' not in self.count_unnamed:
+                self.count_unnamed['Segment'] = 0
+            self.count_unnamed['Segment'] += 1
+            number = str(self.count_unnamed['Segment'])
+            ui_name = 'Segment' + ' ' + number
+        if ui_name not in self.repeated_ui_names:
+            self.repeated_ui_names[ui_name] = 0
+        self.repeated_ui_names[ui_name] += 1
+        if self.repeated_ui_names[ui_name] != 1:
+            ui_name = ui_name + ' ' + str(self.repeated_ui_names[ui_name])
+
         if segment_name in self.segments:
             self.segment = self.segments[segment_name]
+            self.segment_name = ui_name
             self.segment_active = True
             self.segment_line = 1
+            parent = None
+            if self.current_node != 'none':
+                parent = self.nodes[self.current_node]
+            self.file.saveparent(self.segment_name, removable=removable, parent = parent)
         else:
             return False, f'Segment {segment_name} not found'
 

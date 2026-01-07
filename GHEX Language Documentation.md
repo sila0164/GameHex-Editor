@@ -194,17 +194,29 @@ It currently supports two different file structures:
 
       Without a name, the program will just name them "*Type* *number*", iterating the number up as it reads the same type.
 
+    
+    - ## removable
+
+      `removable`  
+      Adding removable to a read command, makes the value deleteable from the ui.  
+      This will delete the bytes in the file. When removed, it can be added it back in again with a button.  
+
     - ## value (Changing values in the script)
    
       `value XXXX`
       By adding value *value* you can change the value directly from the script.
       The new value will still need to be written, but it will be changed by default in the ui.
-      It needs to be a float or integer depending on the values type.
+      It needs to be a float or integer, depending on what type the value is.
 
     - ## hidden (Hiding values in ui)
    
       `hidden`
       Makes the value not appear in the ui. It will still be read and changed using the above command. Can be viewed by pressing "show hidden" button.
+
+    - ## node
+
+      `node name_of_node`  
+      Adds the read value to a node in the ui. For information about nodes read the nodes section.
 
 
   - ## search (Searching for values)
@@ -250,9 +262,11 @@ It currently supports two different file structures:
 
   - ## segment (Running a segment/function)
 
-    `@ segment name_of_segment`
+    `@ segment name_of_segment "segment_name_for_ui" removable`
     Will run a segment by the name given. For information on segments read the segments section.  
-    Can be combined with search and repeat.
+    Can be named in the ui. This will group every stat from the segment into a treenode.  `
+    Can be used with the `removable` command. This will create the segment as a node, with all the values of the segment in it. A removable segment cannot contain search commands.  
+    Can be combined with search and repeat in the same line.
 
 
   - ## repeat (Repeating a command)
@@ -274,7 +288,8 @@ It currently supports two different file structures:
 
   Segments are similar to functions in regular programming. It is used to create a reusable set of instructions.  
   Segments can be created in seperate files or in scripts.  
-  If written in a script use `end`, on a seperate line, to mark the end of the list.
+  If written in a script use `end`, on a seperate line, to mark the end of the list.  
+  Segments containing search commands cannot be removed or added.  
 
   `segment: name_of_segment`
   A segment starts with `segment:` on the first line, followed by the name of the segment.
