@@ -534,9 +534,8 @@ def cleanmultientry(string: str, separator:str=',') -> list:
         stringamount -= 1 
     return strings
 
-def readsegment(path: str, start: int | None) -> tuple[bool, str, dict]:
+def readarray(path: str, start: int | None) -> tuple[bool, str, dict]:
     returndict = {}
-    contains_search = False
     with open(path, encoding='utf-8') as f:
         if start != None:
             findline(f, start - 1)
@@ -547,7 +546,7 @@ def readsegment(path: str, start: int | None) -> tuple[bool, str, dict]:
             name = line_split[1].strip()
         except:
             filename = os.path.basename(path)
-            error(f'Segment: {filename}: Could not read name on line 1:\n{line}\nSkipping segment...')
+            error(f'Array: {filename}: Could not read name on line 1:\n{line}\nSkipping segment...')
             return False, '', returndict
         line = f.readline()
         line_number = 1
@@ -558,17 +557,51 @@ def readsegment(path: str, start: int | None) -> tuple[bool, str, dict]:
                 line_number += 1
                 continue
             if line.lower().strip() == 'end':
-                debug(f'Segment: Reached end at line {line_number}')
+                debug(f'Array: Reached end at line {line_number}')
                 break
             if 'search' in line:
-                contains_search = True
-            if 'removable' in line and contains_search == True:
-                error(f'Segment: {name} line {line_number}: A segment cannot have both removable and search commands in them.')
+                error(f'Array: {name} line {line_number}: An array cannot have search commands in them.')
+                return False, '', returndict
+            if 'function' in line:
+                error(f'Array: {name} line {line_number}: An array cannot have function commands in them.')
                 return False, '', returndict
             try:
                 returndict[line_number] = line
             except:
-                error(f'Segment: {name} line {line_number}: incorrect syntax:\n{line}\nIgnoring line...')
+                error(f'Array: {name} line {line_number}: incorrect syntax:\n{line}\nIgnoring line...')
+            line_number += 1
+            line = f.readline()
+    return True, name, returndict
+
+def readfunction(path: str, start: int | None) -> tuple[bool, str, dict]:
+    returndict = {}
+    with open(path, encoding='utf-8') as f:
+        if start != None:
+            findline(f, start - 1)
+        line = f.readline()
+        line = cleanline(line)
+        try:
+            line_split = line.split(':')
+            name = line_split[1].strip()
+        except:
+            filename = os.path.basename(path)
+            error(f'Function: {filename}: Could not read name on line 1:\n{line}\nSkipping segment...')
+            return False, '', returndict
+        line = f.readline()
+        line_number = 1
+        while line:
+            line = cleanline(line)
+            if line == '': # Ignores empty lines
+                line = f.readline()
+                line_number += 1
+                continue
+            if line.lower().strip() == 'end':
+                debug(f'Function: Reached end at line {line_number}')
+                break
+            try:
+                returndict[line_number] = line
+            except:
+                error(f'Function: {name} line {line_number}: incorrect syntax:\n{line}\nIgnoring line...')
             line_number += 1
             line = f.readline()
     return True, name, returndict
@@ -613,13 +646,13 @@ class Suites:
                 for fileformat in fileformats:
                     self.supported_extensions[fileformat] = filepath
                     print(f'Suites: File Format Supported: {fileformat}')
-            elif 'segment' in line_lower and ':' in line_lower:
-                success, name, segment = readsegment(filepath, start=None)
+            elif 'array' in line_lower and ':' in line_lower:
+                success, name, segment = readarray(filepath, start=None)
                 if success == False:
                     error(f'Invalid segment: {file}. Skipping...')
                 elif name != '':
                     self.loadedsegments[name] = segment    
-                    print(f'Suites: Segment Loaded: {name}')
+                    print(f'Suites: Array Loaded: {name}')
                     dev(f'{segment}')
             else:
                 error(f'{file} is missing valid definition on line 1:\n {line}')
@@ -762,29 +795,47 @@ class Script: # Unfinished (WIP)
                             return False, message
                         debug(f'{message}')
 
-                    if 'segment' in line: # run a segment
-                        success, message = self.runsegment(line_as_list, line_as_list_lower, buffered_line, ui_name)
+                    if 'array' in line: # run a segment
+                        success, message = self.runarray(line_as_list, line_as_list_lower, buffered_line, ui_name)
                         if success == False:
                             error(message)
                             return False, message
                         debug(message)
 
-                    if 'segment' not in line and 'read' not in line and 'search' not in line: # Changes the offset if no command is given
+                    if 'function' in line:
+                        success, message = self.runfunction(line_as_list, line_as_list_lower, buffered_line, ui_name)
+                        if success == False:
+                            error(message)
+                            return False, message
+                        debug(message)
+
+                    if 'function' not in line and 'array' not in line and 'read' not in line and 'search' not in line: # Changes the offset if no command is given
                         debug(f'No commands detected. Setting offset to: {offset}')
                         self.current_offset = offset
                 
                 # '@' commands are done here and the following commands are seperate.
 
                 # Creates and saves a segment to be run later
-                elif 'segment:' in line_as_list_lower: 
+                elif 'array:' in line_as_list_lower: 
                     self.skip_until_end = True
-                    success, name, segment = readsegment(script_path, start=line_number)
+                    success, name, segment = readarray(script_path, start=line_number)
                     if success == False:
-                        return False, 'Script: Invalid Segment'
+                        return False, 'Script: Invalid Array'
                     if name != '':
                         self.segments[name] = segment    
-                        print(f'Script: Segment Loaded: {name}')
-                        debug(f'Segment name: {name}') 
+                        print(f'Script: Array Loaded: {name}')
+                        debug(f'Array name: {name}') 
+                        debug(f'{segment}')
+
+                elif 'function:' in line_as_list_lower: 
+                    self.skip_until_end = True
+                    success, name, segment = readarray(script_path, start=line_number)
+                    if success == False:
+                        return False, 'Script: Invalid Function'
+                    if name != '':
+                        self.segments[name] = segment    
+                        print(f'Script: Function Loaded: {name}')
+                        debug(f'Array name: {name}') 
                         debug(f'{segment}')
 
                 # Creates and saves a list to be used later
@@ -1085,8 +1136,8 @@ class Script: # Unfinished (WIP)
         else:
             return False, 'Script: Incorrect syntax for endian command'
         
-    def runsegment(self, line_as_list: list, line_as_list_lower: list, buffered_line: str, ui_name: str) -> tuple[bool, str]:
-        segment_name = line_as_list[line_as_list_lower.index('segment') + 1]
+    def runarray(self, line_as_list: list, line_as_list_lower: list, buffered_line: str, ui_name: str) -> tuple[bool, str]:
+        segment_name = line_as_list[line_as_list_lower.index('array') + 1]
         self.segment_buffered_line = buffered_line
 
         removable = False
@@ -1094,11 +1145,11 @@ class Script: # Unfinished (WIP)
             removable = True
         
         if ui_name == '':
-            if 'Segment' not in self.count_unnamed:
-                self.count_unnamed['Segment'] = 0
-            self.count_unnamed['Segment'] += 1
-            number = str(self.count_unnamed['Segment'])
-            ui_name = 'Segment' + ' ' + number
+            if 'Array' not in self.count_unnamed:
+                self.count_unnamed['Array'] = 0
+            self.count_unnamed['Array'] += 1
+            number = str(self.count_unnamed['Array'])
+            ui_name = 'Array' + ' ' + number
         if ui_name not in self.repeated_ui_names:
             self.repeated_ui_names[ui_name] = 0
         self.repeated_ui_names[ui_name] += 1
@@ -1115,9 +1166,23 @@ class Script: # Unfinished (WIP)
                 parent = self.nodes[self.current_node]
             self.file.saveparent(self.segment_name, removable=removable, parent = parent)
         else:
-            return False, f'Segment {segment_name} not found'
+            return False, f'Array {segment_name} not found'
 
-        return True, f'Segment started succesfully'     
+        return True, f'Array started succesfully'     
+    
+    def runfunction(self, line_as_list: list, line_as_list_lower: list, buffered_line: str, ui_name: str) -> tuple[bool, str]:
+        segment_name = line_as_list[line_as_list_lower.index('function') + 1]
+        self.segment_buffered_line = buffered_line
+
+        if segment_name in self.segments:
+            self.segment = self.segments[segment_name]
+            self.segment_name = ui_name
+            self.segment_active = True
+            self.segment_line = 1
+        else:
+            return False, f'Function {segment_name} not found'
+
+        return True, f'Function started succesfully'   
 
 
 

@@ -288,44 +288,52 @@ It currently supports these file structures:
       The command endian can be added anywhere on a line containing `search`. Has to be followed by either `little` or `big`
 
 
-  - ## segment (Running a segment/function)
+  - ## function 
 
-    `@ segment name_of_segment`
-    Will run a segment by the name given. For information on segments read the segments section.  
-    Can be used with the `removable` command. This will create the segment as a node, with all the values of the segment in it. A removable segment cannot contain search commands.  
-    Can be combined with search and repeat in the same line.  
+    `@ function name_of_function`
+    Will run a function by the name given. For information on functions read the functions section.  
+    Any commands added to the same line will happen before the function is run.  
+    A function does not create anything in the ui by itself, but something within the function can.
 
-    - ## Naming segments
+
+  - ## array
+
+    `@ array name_of_array`
+    Will create an array by the name given. For information on arrays read the arrays section.  
+    Can be used with the `removable` command. This will create the array as a node, with all the values of the array in it.
+    Can be combined with search, repeat and function in the same line.  
+
+    - ## Naming arrays
  
       Can be added to any line containing segment
  
       `"Name for the UI"`  
       `'Name for the UI "Using apostrophes allow quotation marks!"'`
  
-      The text will be the name used for the segment in the ui.
+      The text will be the name used for the array in the ui.
       ' are not supported, and will shorten the name. If you want " in the name use ' to mark the text.
  
       Detailed description:
 
-      Any text added to a line, using the `segment`-command, within "" or '' will be used as the segments name, in the ui:
+      Any text added to a line, using the `array`-command, within "" or '' will be used as the segments name, in the ui:
 
-      `@ 40 segment name_of_segment 'Name that descripes the values function'`
+      `@ 40 array name_of_array 'Name that descripes the array'`
 
       This can be added anywhere on the line. First, at the end, or in the middle, it doesn't matter.
 
-      Without a name, the program will just name it "Segment *number*", iterating the number up as it creates each segment.  
+      Without a name, the program will just name it "Array *number*", iterating the number up as it creates each segment.  
       Multiple segments of the same name, will have an iterating number after it.
 
     - ## removable
 
       `removable`  
-      Adding removable to a segment, makes the entire segment deleteable from a button in the ui.  
+      Adding removable to a array, makes the entire array deleteable from a button in the ui.  
       This will delete the bytes in the file. When removed, it can be added back in again with a button.  
 
     - ## node
 
       `node name_of_node`  
-      Adds the read value to a node in the ui. For information about creating nodes read the nodes section.
+      Adds the array to a node in the ui. For information about creating nodes read the nodes section.
 
 
   - ## repeat (Repeating a command)
@@ -343,25 +351,44 @@ It currently supports these file structures:
     Will repeat the search and read until the end of the file is reached.
 
 
-# Segments:
+# Functions:
 
-  Segments are similar to functions in regular programming. It is used to create a reusable set of instructions.  
-  Segments can be created in seperate files or in scripts.  
-  If written in a script use `end`, on a seperate line, to mark the end of the list.  
-  Segments containing search commands cannot be removed or added.  
+  Functions are a way to create a predetermined, reusable sets of instructions.  
+  Functions can contain any command, even other functions.  
+  Functions can be created in seperate files or in scripts.  
+  If written in a script use `end`, on a seperate line, to mark the end of the function.   
 
-  A removable segment cannot contain search commands.  
+  `function: name_of_function`
+  An array starts with `function:` on the first line, followed by the name of the function.
+  This name is what you use to refer to it in scripts.  
 
-  `segment: name_of_segment`
-  A segment starts with `segment:` on the first line, followed by the name of the segment.
+  You can the write all the commands you want. IE:  
+  `function: example`  
+  `@ search uint64 102914523`  
+  `@ read uint16 repeat 6`  
+  `@ read uint32 repeat 4`  
+  `@ array my_array 'This is an array`
+  `end`  
+  This will search for 102914523 as an uint64, read 6 uint16's right after each other and 4 uint32's after that, and then set the array my_array.
+
+
+
+# Arrays:
+
+  Arrays are a way to predetermine a bunch of values. Arrays are similar to functions, but can only contain `@ read` commands. `repeat` is accepted only with a read command, it will not work on its own. Arrays can be removed/added dynamically by using the `removable command`, and will create a node automatically containing all the values of the array.  
+  Arrays can be created in seperate files or in scripts.  
+  If written in a script use `end`, on a seperate line, to mark the end of the array.   
+
+  `array: name_of_array`
+  An array starts with `array:` on the first line, followed by the name of the array.
   This name is what you use to refer to it in scripts.  
   
-  You can the write all the scripting commands you want. IE:  
-  `segment: example`  
-  `@ search uint32 12345`  
+  You can the write all the `@ read` commands you want. IE:  
+  `array: example`  
+  `@ read uint16 repeat 6`  
   `@ read uint32 repeat 4`  
   `end`  
-  This segment will look for 12345 in the file and read 4 uint32's right after each other when run.
+  This array will create 6 uint16's right after each other and 4 uint32's after that.
 
 
 # Nodes:
