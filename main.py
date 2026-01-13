@@ -103,6 +103,7 @@ class Main:
             core.dev(self.current_file)
             self.script = core.Script(self.current_file, core.suites)
             success, message = self.script.run()
+            core.dev(self.current_file)
             if success == False:
                 popup = Popup(32, 31, self.root)
                 popup.buttonsackknowledge(15)
@@ -110,13 +111,13 @@ class Main:
                 core.dev('Main: Clearing statdisplay, already had file loaded')
                 self.statdisplay.clear()
             self.firstopen = False
-            if success == True and 1 not in self.current_file.stat:
+            if success == True and self.current_file.stat == {}:
                 popup = Popup(27, 28, self.root)
                 popup.buttonsackknowledge(15)
             else:
                 self.togglehidden.changestate(True)
-            self.statdisplay.newfile(self.updatebuttons, self.current_file)
-            self.filedisplay.changetext(self.current_file.fullname)
+                self.statdisplay.newfile(self.updatebuttons, self.current_file)
+                self.filedisplay.changetext(self.current_file.fullname)
             self.root.after_idle(self.openfilegettime)
             
     def openfilegettime(self):

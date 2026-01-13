@@ -276,7 +276,7 @@ It currently supports these file structures:
 
       `cap value`  
       Caps the search to *value*. The search will stop when it reaches offset + cap. Only supports Integers.  
-      If the search is backwards/in reverse the cap has to be negative.
+      If the given value is 0, it will act as if no cap command was given.
 
     - ## endian (Changing the endian)
 
@@ -334,21 +334,6 @@ It currently supports these file structures:
 
       `node name_of_node`  
       Adds the array to a node in the ui. For information about creating nodes read the nodes section.
-
-
-  - ## repeat (Repeating a command)
- 
-    `repeat x`
-    `end`
-    Will repeat the commands until `end` x times.
-    Setting x to -1 will make it repeat until the end of the file.
-    
-    `search xxxx repeat 5`
-    Will repeat a search 5 times.
-    A repeated search that goes to the end of a file, will reset to the search's starting offset.
-
-    `search xxxx read xxxx repeat -1`
-    Will repeat the search and read until the end of the file is reached.
 
 
 # Functions:

@@ -1,4 +1,5 @@
 import customtkinter as ctk
+from tkinter import ttk
 import core
 from core import debug, dev
 import gui.common as gui
@@ -78,13 +79,26 @@ class FileDisplay: # The text/message display at the top of the window
 
 class StatDisplay: # The main data manipulation interface
     def __init__(self, parent: ctk.CTkFrame, parentcolumn: int=2, parentrow: int=2):
-        self.main = ctk.CTkScrollableFrame(parent,
-        fg_color=core.settings.darkaccent,
-        scrollbar_fg_color=core.settings.background,
-        corner_radius=0)
-        self.main.grid(row=parentrow, column=parentcolumn, sticky='NSEW')
-        self.main.columnconfigure(0, weight=1)
-        self.main.columnconfigure(1, weight=0)
+        if core.settings.treeview != True:
+            self.main = ctk.CTkScrollableFrame(parent,
+            fg_color=core.settings.darkaccent,
+            scrollbar_fg_color=core.settings.background,
+            corner_radius=0)
+            self.main.grid(row=parentrow, column=parentcolumn, sticky='NSEW')
+            self.main.columnconfigure(0, weight=1)
+            self.main.columnconfigure(1, weight=0)
+        else:
+            columns = ['Value', 'Change']
+            self.main.heading("#0", text="Name")
+            self.main.heading("Value", text="Value")
+            self.main.heading("Change", text="Change")
+            if core.settings.debug == True:
+                columns = ['Offset', 'Value', 'Change']
+                self.main.heading("Offset", text="Offset") 
+            self.main = ttk.Treeview(parent,
+                                     columns = columns,
+                                     padding = 5,)
+            self.main.grid(row=parentrow, column=parentcolumn, sticky='NSEW')
         self.revertlastisactive = False
         self.revertoriginalisactive = False
         self.hidehidden = True
@@ -93,16 +107,19 @@ class StatDisplay: # The main data manipulation interface
         dev('StatDiplay: Creating entries')
         self.file = file
         self.traceback = enablewrite
-        self.build_editor()
-
-    def build_editor(self):
-        self.main.grid_remove()
         self.rowcount = 0
         self.revert = {}
-        self.separators = {}
         self.revertcount = 0
         self.inputs = {} # keeps track of the inputboxes
         self.inputamount = 0
+        if core.settings.treeview != True:
+            self.main.grid_remove()
+            self.build_editor()
+        else:
+            self.build_treeview()
+
+    def build_editor(self):
+        self.separators = {}
         for id in self.file.stat: # creates an inputbox for each stat in the dictionary
             if self.file.stat[id]['hidden'] == True and self.hidehidden == True:
                 debug(f'Hiding {self.file.stat[id]['title']}')
@@ -128,6 +145,29 @@ class StatDisplay: # The main data manipulation interface
             self.separators[self.rowcount] = gui.Separator(self.main, self.rowcount, 0, 2, 'horizontal')
             self.rowcount += 1
         self.main.after_idle(self.unhideinputs)
+
+    def build_treeview(self):
+        for id in self.file.stat: # creates an inputbox for each stat in the dictionary
+            if self.file.stat[id]['hidden'] == True and self.hidehidden == True:
+                debug(f'Hiding {self.file.stat[id]['title']}')
+                continue
+            value = self.file.stat[id]['value']
+            if self.file.stat[id]["newvalue"] != None:
+                value = self.file.stat[id]['newvalue']
+            title = self.file.stat[id]['title']
+            type = self.file.stat[id]['type']
+            offset = self.file.stat[id]['offset']
+            parent = self.file.stat[id]['parent']
+            bgcolor = core.settings.accent
+            colorcalc = self.rowcount / 2
+            if colorcalc % 2 == 0: # Makes the backgroundcolor change for every other entry
+                bgcolor = core.settings.darkaccent
+            values = [value, 'Change']
+            if core.settings.debug == True:
+                values = [offset, value, 'Change']
+            print(parent)
+            print(title, values)
+            self.inputs[id] = self.main.insert(parent, 'end', text=title, values=values)
         
     def unhideinputs(self):
         for input in self.inputs:
