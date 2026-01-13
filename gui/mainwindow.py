@@ -89,16 +89,17 @@ class StatDisplay: # The main data manipulation interface
             self.main.columnconfigure(1, weight=0)
         else:
             columns = ['Value', 'Change']
-            self.main.heading("#0", text="Name")
-            self.main.heading("Value", text="Value")
-            self.main.heading("Change", text="Change")
             if core.settings.debug == True:
                 columns = ['Offset', 'Value', 'Change']
-                self.main.heading("Offset", text="Offset") 
             self.main = ttk.Treeview(parent,
                                      columns = columns,
                                      padding = 5,)
             self.main.grid(row=parentrow, column=parentcolumn, sticky='NSEW')
+            self.main.heading("#0", text="Name")
+            self.main.heading("Value", text="Value")
+            self.main.heading("Change", text="Change")
+            if core.settings.debug == True:
+                self.main.heading("Offset", text="Offset") 
         self.revertlastisactive = False
         self.revertoriginalisactive = False
         self.hidehidden = True
