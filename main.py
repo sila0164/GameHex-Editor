@@ -10,7 +10,6 @@ class Main:
         print('\nMain: Creating window')
         start = time.time()
         self.window = MainWindow()
-        self.root = self.window.root
         self.buttonbox = ButtonBox(self.window.main)
         self.filedisplay = FileDisplay(13, self.window.main)
         self.statdisplay = StatDisplay(self.window.main)

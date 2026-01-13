@@ -1,40 +1,63 @@
-import customtkinter as ctk
-from tkinter import ttk
-import core
-from core import debug, dev
-import gui.common as gui
+import dearpygui.dearpygui as dpg
+#import core
+#from core import debug, dev
 
-class MainWindow:# The main window that contains everything
-
+class MainWindow:
     def __init__(self):
+        dpg.create_context()
+        dpg.create_viewport(title='Test')#core.settings.language[12])
+
+        #if core.settings.debug == False:
+        dpg.set_viewport_height(600)
+        dpg.set_viewport_width(600)
+        #else:
+        #    dpg.set_viewport_height(600)
+        #    dpg.set_viewport_width(700)
+
+        #dpg.set_viewport_large_icon("gui/icon.ico")
+        #dpg.set_viewport_small_icon("gui/icon.ico")
+
+        with dpg.window(label='test'):#core.settings.language[12]):
+            self.message_display = dpg.add_text('test')#core.settings.language[13])
+
+        dpg.setup_dearpygui()
+        dpg.show_viewport()
+
+    def run(self):
+        dpg.start_dearpygui()
+        dpg.destroy_context()
+
+#class MainWindow:# The main window that contains everything
+
+#    def __init__(self):
 
         # Creates itself
-        self.root = ctk.CTk()
-        self.root.title(core.settings.language[12])
-        if core.settings.debug == False:
-            self.root.geometry("600x600")
-        else:
-            self.root.geometry("700x600")
-        self.root.iconbitmap("gui/icon.ico")
-        self.main = ctk.CTkFrame(self.root, fg_color=core.settings.background)
-        self.root.grid_rowconfigure(0, weight=1)
-        self.root.grid_columnconfigure(0, weight=1)
-        self.main.columnconfigure(0, weight=0)
-        self.main.columnconfigure(1, weight=0)
-        self.main.columnconfigure(2, weight=1)
-        self.main.rowconfigure(0, weight=0)
-        self.main.rowconfigure(1, weight=0)
-        self.main.rowconfigure(2, weight=1)
-
+#        self.root = ctk.CTk()
+ #       self.root.title(core.settings.language[12])
+ #       if core.settings.debug == False:
+ #           self.root.geometry("600x600")
+ #       else:
+ #           self.root.geometry("700x600")
+  #      self.root.iconbitmap("gui/icon.ico")
+   #     self.main = ctk.CTkFrame(self.root, fg_color=core.settings.background)
+    #    self.root.grid_rowconfigure(0, weight=1)
+     #   self.root.grid_columnconfigure(0, weight=1)
+      #  self.main.columnconfigure(0, weight=0)
+       # self.main.columnconfigure(1, weight=0)
+#        self.main.columnconfigure(2, weight=1)
+ #       self.main.rowconfigure(0, weight=0)
+  #      self.main.rowconfigure(1, weight=0)
+   #     self.main.rowconfigure(2, weight=1)
+#
         # Creates the white lines that seperate items on screen
-        self.horsep = gui.Separator(self.main, 1, 0, 3, 'horizontal')
-        self.versep = gui.Separator(self.main, 1, 1, 2, 'vertical')
+ #       self.horsep = gui.Separator(self.main, 1, 0, 3, 'horizontal')
+  #      self.versep = gui.Separator(self.main, 1, 1, 2, 'vertical')
+#
+#    def unhide(self):
+ #       self.main.grid(row=0, column=0, sticky='NSEW')
 
-    def unhide(self):
-        self.main.grid(row=0, column=0, sticky='NSEW')
-
-    def exit(self):
-        self.root.destroy()
+  #  def exit(self):
+   #     self.root.destroy()
 
 class ButtonBox: # The box on the left side of the window containing the buttons
     def __init__(self, parent, parentcolumn: int=0, parentrow: int=2):
@@ -238,8 +261,22 @@ class StatDisplay: # The main data manipulation interface
         return value
 
 
-    
-    
+dpg.create_context()
+dpg.create_viewport(title='Custom Title', width=600, height=300)
+
+with dpg.window(label="Example Window"):
+    dpg.add_text("Hello, world")
+    dpg.add_button(label="Save")
+    dpg.add_input_text(label="string", default_value="Quick brown fox")
+    dpg.add_slider_float(label="float", default_value=0.273, max_value=1)
+
+dpg.setup_dearpygui()
+dpg.show_viewport()
+dpg.start_dearpygui()
+dpg.destroy_context()
+
+        
+        
 
 
             
