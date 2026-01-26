@@ -34,3 +34,9 @@ list: English
 30: An unexpected error occured. Please report this as a bug and send the ERROR .txt file with the report.
 31: Something went wrong when running the script and all stats might not have been found. Check the log or error file for details.
 32: Script error
+33: File
+34: Save
+35: Save as...
+36: Settings
+37: as
+38: in

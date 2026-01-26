@@ -300,7 +300,7 @@ It currently supports these file structures:
 
     `@ array name_of_array`
     Will create an array by the name given. For information on arrays read the arrays section.  
-    Can be used with the `removable` command. This will create the array as a node, with all the values of the array in it.
+    Can be used with the `removable` command.
     Can be combined with search, repeat and function in the same line.  
 
     - ## Naming arrays
@@ -327,8 +327,14 @@ It currently supports these file structures:
     - ## removable
 
       `removable`  
-      Adding removable to a array, makes the entire array deleteable from a button in the ui.  
+      Adding removable to a array, makes the entire array removable from a button in the ui.  
       This will delete the bytes in the file. When removed, it can be added back in again with a button.  
+
+    - ## addable
+
+      `addable`  
+      Adding addable to a array, makes the entire array addable from a button in the ui.  
+      This will add the bytes to the file. When added, it can be removed again with a button.  
 
     - ## node
 

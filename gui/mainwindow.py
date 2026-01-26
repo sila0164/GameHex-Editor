@@ -1,104 +1,101 @@
 import dearpygui.dearpygui as dpg
-#import core
-#from core import debug, dev
+import core
+from core import debug, dev
 
-class MainWindow:
-    def __init__(self):
-        dpg.create_context()
-        dpg.create_viewport(title='Test')#core.settings.language[12])
+def init(open_function, save_function, save_as_function, undo_function, settings_function, exit_function):
+    dpg.create_context()
+    dpg.create_viewport(title=core.settings.language[12])
 
-        #if core.settings.debug == False:
+    if core.settings.debug == False:
         dpg.set_viewport_height(600)
         dpg.set_viewport_width(600)
-        #else:
-        #    dpg.set_viewport_height(600)
-        #    dpg.set_viewport_width(700)
+    else:
+        dpg.set_viewport_height(600)
+        dpg.set_viewport_width(700)
 
-        #dpg.set_viewport_large_icon("gui/icon.ico")
-        #dpg.set_viewport_small_icon("gui/icon.ico")
+    dpg.set_viewport_large_icon("gui/icon.ico")
+    dpg.set_viewport_small_icon("gui/icon.ico")
 
-        with dpg.window(label='test'):#core.settings.language[12]):
-            self.message_display = dpg.add_text('test')#core.settings.language[13])
+    with dpg.window(label=core.settings.language[12]):
+        with dpg.child_window(height=25, border=False, no_scrollbar=True):
+            with dpg.menu_bar():
+                with dpg.menu(label=core.settings.language[33]): #File menu
+                    dpg.add_menu_item(label=core.settings.language[5], callback=open_function) # Open button for opening files
+                    dpg.add_menu_item(label=core.settings.language[34], callback=save_function) # Save button for saving
+                    dpg.add_menu_item(label=core.settings.language[35], callback=save_as_function) # Save As button for saving as
+                    dpg.add_menu_item(label=core.settings.language[6], callback=undo_function) # Undo button
+                    dpg.add_menu_item(label=core.settings.language[36], callback=settings_function) # Settings button for opening settings
+                    dpg.add_menu_item(label=core.settings.language[0], callback=exit_function) # Exit button for exiting the program
+            dpg.add_separator()
+        with dpg.child_window(border=False, tag='editor'): # The main editor area
+            with dpg.tab_bar(tag='open_files'):
+                pass
+        with dpg.child_window(height=25, border=False, no_scrollbar=True, tag='process_bar'): # A process bar, for giving messages and showing progress
+            dpg.add_separator()
+            dpg.add_text(core.settings.language[13], tag='message_display') # The main message display
 
-        dpg.setup_dearpygui()
-        dpg.show_viewport()
+    dpg.setup_dearpygui()
+    dpg.show_viewport()
+    dpg.start_dearpygui()
 
-    def run(self):
-        dpg.start_dearpygui()
-        dpg.destroy_context()
+def change_message(message: int):
+    dev('Main window: Changing message display to: ' + core.settings.language[message])
+    dpg.set_value('message_display', core.settings.language[message])
 
-#class MainWindow:# The main window that contains everything
+def close_main_window():
+    dev('Main window: Closing main window')
+    dpg.destroy_context()
 
-#    def __init__(self):
+def add_file_tab(file:core.File, remove_function, add_function):
+    with dpg.tab(tag=file.fullname, label=file.fullname, parent='open_files'):
+        #with dpg.tab_bar(tag=file.nodes[0]): This is for later when tabs are added to help organize.
+         #   for node in file.nodes:
+          #      with dpg.tab(tag=node, label=node):
+           #         pass
+        for id in file.stat:
+            if file.stat[id]['hidden'] == True and core.settings.hidehidden == True:
+                debug(f'Skipping {file.stat[id]["title"]}, value is hidden')
+                continue
+            parent = file.stat[id]['parent']
+            title = file.stat[id]['title']
+            newvalue = file.stat[id]['newvalue']
+            if newvalue == None:
+                value = file.stat[id]['value']
+            else:
+                value = newvalue
+            removable = file.stat[id]['removable']
+            dict = file.stat[id]['dict']
+            type = file.stat[id]["type"]
+            with dpg.child_window(height=25, border=False, no_scrollbar=True, tag=title):
+                with dpg.group(horizontal=True):
+                    dpg.add_text(title, width=400)
+                    if core.settings.debug == True or core.settings.devdebug == True:
+                        offset = file.stat[id]["offset"]
+                        endian = file.stat[id]['endian']
+                        dpg.add_text('@ ' + offset + ' ' + core.settings.language[37] + ' ' + type + ' ' + core.settings.language[38] + endian, width=100)
+                    if removable == False:
+                        width = 200
+                        if dict == None and 'float' in type:
+                            dpg.add_input_float(width=width, default_value=value, step=1)
+                        elif dict == None and 'int' in type:
+                            dpg.add_input_int(width=width, default_value=value, step=1) # ADD: Value caps for each type
+                        elif dict == True:
+                            dpg.add_combo(items=list(dict['list'].keys()))
+                    else:
+                        width = 150
+                        if dict == None and 'float' in type:
+                            dpg.add_input_float(width=width, default_value=value, step=1)
+                        elif dict == None and 'int' in type:
+                            dpg.add_input_int(width=width, default_value=value, step=1) # ADD: Value caps for each type
+                        elif dict == True:
+                            dpg.add_combo(items=list(dict['list'].keys()))
+                        dpg.add_button(label='+', callback=remove_function)
+                        dpg.add_button(label='-', callback=add_function)
+                    
 
-        # Creates itself
-#        self.root = ctk.CTk()
- #       self.root.title(core.settings.language[12])
- #       if core.settings.debug == False:
- #           self.root.geometry("600x600")
- #       else:
- #           self.root.geometry("700x600")
-  #      self.root.iconbitmap("gui/icon.ico")
-   #     self.main = ctk.CTkFrame(self.root, fg_color=core.settings.background)
-    #    self.root.grid_rowconfigure(0, weight=1)
-     #   self.root.grid_columnconfigure(0, weight=1)
-      #  self.main.columnconfigure(0, weight=0)
-       # self.main.columnconfigure(1, weight=0)
-#        self.main.columnconfigure(2, weight=1)
- #       self.main.rowconfigure(0, weight=0)
-  #      self.main.rowconfigure(1, weight=0)
-   #     self.main.rowconfigure(2, weight=1)
-#
-        # Creates the white lines that seperate items on screen
- #       self.horsep = gui.Separator(self.main, 1, 0, 3, 'horizontal')
-  #      self.versep = gui.Separator(self.main, 1, 1, 2, 'vertical')
-#
-#    def unhide(self):
- #       self.main.grid(row=0, column=0, sticky='NSEW')
 
-  #  def exit(self):
-   #     self.root.destroy()
-
-class ButtonBox: # The box on the left side of the window containing the buttons
-    def __init__(self, parent, parentcolumn: int=0, parentrow: int=2):
-        self.main = ctk.CTkFrame(parent, fg_color=core.settings.background,
-        corner_radius=0, border_width=0)
-        self.main.grid(row=parentrow, column=parentcolumn, sticky='NSEW')
-        self.buttoncount = 0 # a counter of buttons, to automatically create buttons without needing to get row number
-
-    def placebutton(self, button, lastbutton:bool=False): 
-        if lastbutton == True:
-            self.main.rowconfigure(self.buttoncount, weight=100)
-            self.buttoncount += 1
-        self.main.rowconfigure(self.buttoncount, weight=0)
-        button.grid(column=0, row=self.buttoncount, padx=4, pady=4)
-        self.buttoncount += 1
-    
-    def space(self, space:int=15):
-        self.main.rowconfigure(self.buttoncount, weight=0, minsize=space)
-        self.buttoncount += 1
-
-class FileDisplay: # The text/message display at the top of the window
         
-    def __init__(self, message, parent: ctk.CTkFrame, parentcolumn: int=0, parentrow: int=0, columnspan: int=1000):
-        self.filedisplayframe = ctk.CTkFrame(parent, fg_color=core.settings.background,
-        corner_radius=0,
-        )
-        if isinstance(message, int):
-            message = core.settings.language[message]
-        self.filedisplayframe.grid(column=parentcolumn, columnspan=columnspan, row=parentrow, sticky='WNSE')
-        self.filedisplay = ctk.CTkLabel(self.filedisplayframe, text=message, bg_color=core.settings.background,
-        text_color=core.settings.text, justify='left', anchor='w')
-        self.filedisplay.grid(column=0, row=0, sticky='W', padx=4)
-    
-    def changetext(self, message, wait: bool = False, delayedmessage = None, timer: int = 3500):
-        if isinstance(message, int):
-            message = core.settings.language[message]
-        self.filedisplay.configure(text=message)
-        if delayedmessage != None:
-            if isinstance(delayedmessage, int):
-                delayedmessage = core.settings.language[delayedmessage]
-            self.filedisplay.after (timer, lambda: self.filedisplay.configure(text=delayedmessage))
+                
 
 class StatDisplay: # The main data manipulation interface
     def __init__(self, parent: ctk.CTkFrame, parentcolumn: int=2, parentrow: int=2):

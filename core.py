@@ -336,6 +336,7 @@ class Settings:
         #self.wantbackups: bool = False
         self.openfile: bool = False
         self.debug: bool = False
+        self.hidehidden: bool = True
         self.devdebug: bool = False
         print('Settings: Default settings initialized')
 
@@ -373,6 +374,7 @@ class Settings:
             'language': ['English', 'language'],
             #'wantbackups': [False, 'bool'], 
             'debug': [False, 'bool'],
+            'hidehidden': [True, 'bool'],
             'devdebug': [False, 'bool']
             }
             with open(self.settingsfile, "w", encoding='utf-8') as f:
@@ -391,6 +393,7 @@ class Settings:
         #self.wantbackups: bool = self.settings['wantbackups'][0]
         #self.openfile: bool = False 
         self.debug: bool = self.settings['debug'][0]
+        self.hidehidden: bool = self.settings['hidehidden'][0]
         self.devdebug: bool = self.settings['devdebug'][0]
 
         debug('Debug mode is enabled')
