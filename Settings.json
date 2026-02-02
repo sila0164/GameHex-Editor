@@ -32,11 +32,15 @@
   "language"
  ],
  "debug": [
+  false,
+  "bool"
+ ],
+ "hidehidden": [
   true,
   "bool"
  ],
  "devdebug": [
-  true,
+  false,
   "bool"
  ]
 }

@@ -12,7 +12,7 @@ list: Dansk
 9: Ja
 10: Nej
 11: Usupportered fil
-12: GameHex Alpha 0.1 # Window title
+12: GameHex 0.2 # Window title
 13: Vælg en fil du vil åbne
 14: Den valgte fil blev ikke genkendt som en supporteret fil af programmet.
 15: OK

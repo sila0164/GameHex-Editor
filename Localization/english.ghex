@@ -14,7 +14,7 @@ list: English
 9: Yes
 10: No
 11: Unsupported File
-12: GameHex Alpha 0.1 # Window title
+12: GameHex 0.2 # Window title
 13: Please open a file
 14: The selected file did not get recognized as a supported fileformat by the program.
 15: OK
@@ -34,7 +34,7 @@ list: English
 30: An unexpected error occured. Please report this as a bug and send the ERROR .txt file with the report.
 31: Something went wrong when running the script and all stats might not have been found. Check the log or error file for details.
 32: Script error
-33: File
+33: Menu
 34: Save
 35: Save as...
 36: Settings
