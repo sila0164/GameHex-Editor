@@ -2,6 +2,8 @@ import os
 import sys
 import json
 
+settings = None
+
 def cleanline(line: str) -> str:
     if '#' in line:
         line_split = line.split('#') # Allaws for comments with # in lines, ignores everything after '#'

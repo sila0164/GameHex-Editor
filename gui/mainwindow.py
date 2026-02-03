@@ -1,7 +1,9 @@
 import dearpygui.dearpygui as dpg
 from core.common import dev, debug, error
+import core.settings as cs
 
-def init(open_function, save_function, save_as_function, undo_function, settings_function, exit_function, settings):
+def init(open_function, save_function, save_as_function, undo_function, settings_function, exit_function):
+    settings = cs.settings
     dpg.create_context()
     dpg.create_viewport(title=settings.language[12])
 
@@ -19,18 +21,18 @@ def init(open_function, save_function, save_as_function, undo_function, settings
         with dpg.menu_bar():
             with dpg.menu(label=settings.language[33]): #File menu
                 dpg.add_menu_item(label=settings.language[5], callback=open_function) # Open button for opening files
-                dpg.add_menu_item(label=settings.language[34], callback=save_function) # Save button for saving
-                dpg.add_menu_item(label=settings.language[35], callback=save_as_function) # Save As button for saving as
-                dpg.add_menu_item(label=settings.language[6], callback=undo_function) # Undo button
+                dpg.add_menu_item(label=settings.language[34], callback=save_function, enabled=False) # Save button for saving
+                dpg.add_menu_item(label=settings.language[35], callback=save_as_function, enabled=False) # Save As button for saving as
+                dpg.add_menu_item(label=settings.language[6], callback=undo_function, enabled=False) # Undo button
                 dpg.add_menu_item(label=settings.language[36], callback=settings_function) # Settings button for opening settings
                 dpg.add_menu_item(label=settings.language[0], callback=exit_function) # Exit button for exiting the program
-            with dpg.menu(label=' |', enabled=False):
+            with dpg.menu(label='|', enabled=False):
                 pass
             with dpg.menu(label=settings.language[13], enabled=False, tag='message_display'): # "Message display"
                 pass
         with dpg.child_window(border=False, tag='editor'): # The main editor area
-            with dpg.tab_bar(tag='open_files'):
-                pass
+            #with dpg.tab_bar(tag='open_files'):
+            pass
 
     dpg.set_primary_window('Primary', True)
     dpg.setup_dearpygui()

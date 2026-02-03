@@ -1,5 +1,6 @@
 import datetime
 import os
+from core.settings import settings
 
 def dev(text):
     if settings.devdebug == True:

@@ -1,9 +1,13 @@
-
+from tkinter import filedialog
+import core.file as cf
 
 def open():
-    pass
+    filepath = filedialog.askopenfilename()
+    if filepath != '':
+        cf.current_file = cf.File(filepath)
 
 def save():
+    #cf.current_file.save()
     pass
 
 def saveas():

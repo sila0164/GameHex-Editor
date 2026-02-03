@@ -25,7 +25,7 @@ list: English
 21: Something went wrong when writing to the file. Make sure all values are a valid number.
 22: Invalid Value
 23: Warning 
-24: Any changes to the current file that has not been written will be lost.
+24: You have unsaved changes. Do you want to save before exiting?
 25: Continue
 26: Cancel
 27: No values found
