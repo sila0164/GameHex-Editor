@@ -1,8 +1,7 @@
 import os
 import sys
 import json
-
-settings = None
+import time
 
 def cleanline(line: str) -> str:
     if '#' in line:
@@ -232,4 +231,11 @@ class Settings:
         else: # if checks were unsuccessful it return False
             print(f"Settings: Could not change: {name} to: {value} as it was not a: {self.settings[name][1]}")
             return False
-    
+
+start = time.time()
+print('Settings: Getting settings')
+settings = Settings()
+end = time.time()
+print(f'Settings: Settings Initialized. Time elapsed: {end - start} seconds')
+
+
