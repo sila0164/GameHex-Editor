@@ -48,11 +48,13 @@ def close_main_window():
     dpg.destroy_context()
 
 def build_editor():
-    with dpg.child_window(tag='editor'):
+    dev('Building editor')
+    with dpg.child_window(parent = 'Primary', tag='editor'):
         with dpg.tab_bar(tag='open_files'):
             pass
 
 def add_file_tab(file):
+    dev(f'Adding file tab for {file.fullname}')
     with dpg.tab(tag=file.fullname, label=file.fullname, parent='open_files'):
         for id in file.stat:
             if file.stat[id]['hidden'] == True and cs.settings.hidehidden == True:
@@ -66,30 +68,33 @@ def add_file_tab(file):
             else:
                 value = newvalue
             removable = file.stat[id]['removable']
-            list = file.stat[id]['dict']['list']
+            if file.stat[id]['dict'] != None:
+                list = file.stat[id]['dict']['list']
+            else:
+                list = None
             type = file.stat[id]["type"]
             with dpg.child_window(height=25, border=False, no_scrollbar=True, tag=title):
                 with dpg.group(horizontal=True):
-                    dpg.add_text(title, width=400)
+                    dpg.add_text(title,) #width=400)
                     if cs.settings.debug == True or cs.settings.devdebug == True:
                         offset = file.stat[id]["offset"]
                         endian = file.stat[id]['endian']
-                        dpg.add_text('@ ' + offset + ' ' + cs.settings.language[37] + ' ' + type + ' ' + cs.settings.language[38] + endian, width=100)
+                        dpg.add_text(' - @' + str(offset) + ' ' + cs.settings.language[37] + ' ' + type + ' ' + cs.settings.language[38] + endian + ' endian')
                     if removable == False:
                         width = 200
-                        if dict == None and 'float' in type:
-                            dpg.add_input_float(width=width, default_value=value, step=1)
-                        elif dict == None and 'int' in type:
-                            dpg.add_input_int(width=width, default_value=value, step=1) # ADD: Value caps for each type
-                        else:
+                        if list == None and 'float' in type:
+                            dpg.add_input_float(width=width, default_value=float(value), step=1)
+                        elif list == None and 'int' in type:
+                            dpg.add_input_int(width=width, default_value=int(value), step=1) # ADD: Value caps for each type
+                        elif list != None:
                             dpg.add_combo(items=list.keys())
                     else:
                         width = 150
-                        if dict == None and 'float' in type:
-                            dpg.add_input_float(width=width, default_value=value, step=1)
-                        elif dict == None and 'int' in type:
-                            dpg.add_input_int(width=width, default_value=value, step=1) # ADD: Value caps for each type
-                        elif dict == True:
+                        if list == None and 'float' in type:
+                            dpg.add_input_float(width=width, default_value=float(value), step=1)
+                        elif list == None and 'int' in type:
+                            dpg.add_input_int(width=width, default_value=int(value), step=1) # ADD: Value caps for each type
+                        elif list != None:
                             dpg.add_combo(items=list.keys())
                         dpg.add_button(label='+', callback=cb.remove)
                         dpg.add_button(label='-', callback=cb.add)

@@ -828,4 +828,5 @@ def run_script():
         dpg.configure_item(item='message_display', label=cs.settings.language[31])
     if mw.editor_is_built == False:
         mw.build_editor()
+    dev(script.file)
     mw.add_file_tab(cf.current_file)

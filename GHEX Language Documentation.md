@@ -35,9 +35,9 @@ It currently supports these file structures:
 
 - ## General Info
 
-  In GHEX scripts each line is considered 1 instruction.
+  In GHEX-scripts each line is considered 1 instruction.
 
-  Everything in a line is seperated by spaces (" "), except for the first line.      
+  Everything in a line is seperated by spaces (" "), except for the first line, which defines what kind of script this is for the program.      
 
   You can add as many spaces as you like.  
 

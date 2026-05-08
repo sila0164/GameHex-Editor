@@ -9,10 +9,10 @@ import core.ghex as ghex
 
 def open_button():
     if cf.current_file != None:
-        if cf.current_file.filehasbeenedited == True:
-            popup.unsaved_changes()
-        else:
-            pass
+        #if cf.current_file.filehasbeenedited == True:
+        #    popup.unsaved_changes()
+        #else:
+        pass
     else:
         cb.open()
 
