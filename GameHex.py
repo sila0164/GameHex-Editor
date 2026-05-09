@@ -1,25 +1,62 @@
-import time
-import core.settings as cs
-import core.file as cf
-import core.buttons as cb
 import gui.mainwindow as mw
-import gui.popups as popup
+from tkinter import filedialog
+from core.common import debug, dev, support_check
 import core.ghex as ghex
+import sys, os
+from core.file import File
 
+file = None
+suites = None
+
+def get_dir() -> tuple[bool, str, str, str | None]:
+    is_exe = getattr(sys, 'frozen', False) # Check to see if is running as exe or script
+
+    if is_exe == True: # Sets root of program as either exe or script
+        root = os.path.dirname(sys.executable)
+    else:
+        root = os.path.dirname(os.path.abspath(__file__))
+
+    dev(f'Root: {root}') 
+    
+    os.chdir(root)  
+    sys.path.append(root)
+
+    if is_exe == True:
+        sys.stdout = open("Log.txt", "w", encoding="utf-8") # Log file creation, if exe
+        log = os.path.join(root, "Log.txt")
+    else:
+        log = None
+
+    suitesfolder = os.path.join(root, 'SUITES') # Checks for suites folder and creates it if it doesnt exist
+    if not os.path.exists(suitesfolder):
+        os.makedirs(suitesfolder, exist_ok=False)
+
+    return is_exe, root, suitesfolder, log
 
 def open_button():
-    if cf.current_file != None:
-        #if cf.current_file.filehasbeenedited == True:
-        #    popup.unsaved_changes()
-        #else:
-        pass
+    filepath = filedialog.askopenfilename()
+    if filepath != '':
+        tempfile = File(filepath)
     else:
-        cb.open()
+        print('No file selected')
+        return
+    global suites
+    supported = support_check(tempfile, suites)
+    if supported == False:
+        #dpg.configure_item(item='message_display', label=cs.settings.language[11])
+        print(f'File {tempfile} is not supported')
+        return
+    script = ghex.Script(tempfile, suites)
+    global file
+    success, file = script.run()
+    mw.load_file_to_ui(file)
+
+def save_button():
+    mw.write_file_from_ui(file)
 
 if __name__ == '__main__': 
-    start = time.time()
-    print('Main: Getting settings')
-    end = time.time()
-    print(f'Main: Settings Initialized. Time elapsed: {end - start} seconds')
-    mw.init(open_button, cb.save, cb.saveas, cb.undo, cb.settings, cb.exit)
+    #global is_exe, root, suites_folder, log, suites
+    is_exe, root, suites_folder, log = get_dir()
+    suites = ghex.Suites(suites_folder)
+    mw.init(open_button, save_button)
 

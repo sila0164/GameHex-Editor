@@ -1,7 +1,5 @@
 import struct
-from core.common import dev, error, typelengths
-
-current_file = None
+from core.common import dev, typelengths
 
 class File:
     def __init__(self, path: str):
@@ -99,14 +97,14 @@ class File:
         dev(f"File: Failed to find {searchstrings}: Reached {cap}")
         return 0
 
-    def write(self, new_values: list):
+    def write(self, new_values: dict):
         dev('File: Writing to file')
         dev(f'New values: {new_values}')
         with open(self.path, 'rb+') as f: 
-            for id in self.stat:
+            for id in new_values:
                 id_as_int = int(id)
                 endian = self.stat[id]['endian']
-                new_value = new_values[id_as_int]
+                new_value = new_values[id]
                 old_value = self.stat[id]['value']
                 self.stat[id]['value'] = new_value
                 id = self.stat[id]
@@ -131,7 +129,7 @@ class File:
                     elif 'int' in id['type']:
                         data = int(id['value']).to_bytes(typelength, byteorder=endian, signed=True)
                     else:
-                        error(f'Write: Invalid type: {id['type']}. Please report as a bug.')
+                        print(f'Write: Invalid type: {id['type']}. Please report as a bug.')
                     f.write(data)
                 else:
                     dev(f'File: Skipping {id_as_int} - {id['title']}, no new value')

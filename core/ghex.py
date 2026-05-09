@@ -1,8 +1,5 @@
 import os
-from core.common import error, debug, dev, validtypes, typelengths
-import core.settings as cs
-import core.file as cf
-import time
+from core.common import debug, dev, validtypes, typelengths
 import dearpygui.dearpygui as dpg
 import gui.mainwindow as mw
 
@@ -35,7 +32,7 @@ def readlist(path, start: int | None, language: bool = False) -> tuple[str, dict
             name = line_split[1].strip()
         except:
             filename = os.path.basename(path)
-            error(f'List: {filename}: Could not read name on line 1:\n{line}\nSkipping list...')
+            debug(f'List: {filename}: Could not read name on line 1:\n{line}\nSkipping list...')
             return '', returndict
         line = f.readline()
         line_number = 2
@@ -60,7 +57,7 @@ def readlist(path, start: int | None, language: bool = False) -> tuple[str, dict
                     returndict['list'][firststring] = laststring
                     returndict['list_reverse'][laststring] = firststring
             except:
-                error(f'List: {name} line {line_number}: incorrect syntax:\n{line}\nIgnoring line...')
+                debug(f'List: {name} line {line_number}: incorrect syntax:\n{line}\nIgnoring line...')
             line_number += 1
             line = f.readline()
     return name, returndict
@@ -96,7 +93,7 @@ def cleannumber(number: str) -> tuple[bool, int]:
         converted = int(number_no_x, 16)
         return True, converted
     except ValueError:
-        error(f'Invalid number: {number}')
+        debug(f'Invalid number: {number}')
         return False, 0
 
 def getname(line: str) -> tuple[str, str]:
@@ -155,7 +152,7 @@ def readarray(path: str, start: int | None) -> tuple[bool, str, dict]:
             name = line_split[1].strip()
         except:
             filename = os.path.basename(path)
-            error(f'Array: {filename}: Could not read name on line 1:\n{line}\nSkipping array...')
+            debug(f'Array: {filename}: Could not read name on line 1:\n{line}\nSkipping array...')
             return False, '', returndict
         line = f.readline()
         line_number = 1
@@ -169,18 +166,18 @@ def readarray(path: str, start: int | None) -> tuple[bool, str, dict]:
                 debug(f'Array: Reached end at line {line_number}')
                 break
             if 'search' in line:
-                error(f'Array: {name} line {line_number}: An array cannot have search commands in them.')
+                debug(f'Array: {name} line {line_number}: An array cannot have search commands in them.')
                 return False, '', returndict
             if 'function' in line:
-                error(f'Array: {name} line {line_number}: An array cannot have function commands in them.')
+                debug(f'Array: {name} line {line_number}: An array cannot have function commands in them.')
                 return False, '', returndict
             if 'array' in line:
-                error(f'Array: {name} line {line_number}: An array cannot have array commands in them.')
+                debug(f'Array: {name} line {line_number}: An array cannot have array commands in them.')
                 return False, '', returndict
             try:
                 returndict[line_number] = line
             except:
-                error(f'Array: {name} line {line_number}: incorrect syntax:\n{line}\nIgnoring line...')
+                debug(f'Array: {name} line {line_number}: incorrect syntax:\n{line}\nIgnoring line...')
             line_number += 1
             line = f.readline()
     return True, name, returndict
@@ -197,7 +194,7 @@ def readfunction(path: str, start: int | None) -> tuple[bool, str, dict]:
             name = line_split[1].strip()
         except:
             filename = os.path.basename(path)
-            error(f'Function: {filename}: Could not read name on line 1:\n{line}\nSkipping function...')
+            debug(f'Function: {filename}: Could not read name on line 1:\n{line}\nSkipping function...')
             return False, '', returndict
         line = f.readline()
         line_number = 1
@@ -213,30 +210,25 @@ def readfunction(path: str, start: int | None) -> tuple[bool, str, dict]:
             try:
                 returndict[line_number] = line
             except:
-                error(f'Function: {name} line {line_number}: incorrect syntax:\n{line}\nIgnoring line...')
+                debug(f'Function: {name} line {line_number}: incorrect syntax:\n{line}\nIgnoring line...')
             line_number += 1
             line = f.readline()
     return True, name, returndict
 
 class Suites:
-    def __init__(self):
-        if cs.settings == None:
-            print('Suites: No Settings')
-            return
-        self.suites_folder = cs.settings.suitesfolder
+    def __init__(self, suites_folder):
+        self.suites_folder = suites_folder
         self.supported_extensions = {}
         self.loaded_suites = {}
         self.loaded_lists = {}
         self.loaded_arrays = {}
         debug(f'Suites: Beginning read in {self.suites_folder}')    
-        start = time.time()
-    #print(f'Main: Suites Read. 
+        
         for folder in os.listdir(self.suites_folder):
             path = os.path.join(self.suites_folder, folder)
             debug(f'Suites: New suite: {path}')
             self.readsuites(path)
-        end = time.time()
-        debug(f'Suites: Read all. Time elapsed: {end - start}\nSupported formats:\n{self.supported_extensions.keys()}\nLists:\n{self.loaded_lists.keys()}')
+        debug(f'Suites: Read all. \nSupported formats:\n{self.supported_extensions.keys()}\nLists:\n{self.loaded_lists.keys()}')
 
     def readsuites(self, path):
         for file in os.listdir(path):
@@ -264,21 +256,19 @@ class Suites:
             elif 'array' in line_lower and ':' in line_lower:
                 success, name, segment = readarray(filepath, start=None)
                 if success == False:
-                    error(f'Invalid segment: {file}. Skipping...')
+                    debug(f'Invalid segment: {file}. Skipping...')
                 elif name != '':
                     self.loaded_arrays[name] = segment    
                     print(f'Suites: Array Loaded: {name}')
                     dev(f'{segment}')
             else:
-                error(f'{file} is missing valid definition on line 1:\n {line}')
-
-suites = Suites()
+                debug(f'{file} is missing valid definition on line 1:\n {line}')
 
 class Script: # Unfinished (WIP)
-    def __init__(self, file, suites):
+    def __init__(self, filepath, suites):
         self.current_offset = 0 # The current offset that is used throughout a script to read at.
         self.count_unnamed = {} # A dictionary used for dynamically naming unnamed values in a script.
-        self.file = file # The currently mounted file to be read
+        self.file = filepath # The currently mounted file to be read
         self.suites = suites.supported_extensions # The list of supported extensions from the Suites-class
         self.lists = suites.loaded_lists # The currently loaded lists from the Suites-class
         self.segments = suites.loaded_arrays # The currently loaded arrays and function from the Suites-class
@@ -354,7 +344,7 @@ class Script: # Unfinished (WIP)
                     ui_name, line = getname(line) 
                 except:
                     scriptname = os.path.basename(script_path)
-                    error(f'{scriptname} line {line_number}: Invalid Name: {line}')    
+                    debug(f'{scriptname} line {line_number}: Invalid Name: {line}')    
                 
                 dev(f'Script: line {line_number}: {line}')
                 dev(f'Script: name: {ui_name}')
@@ -376,7 +366,7 @@ class Script: # Unfinished (WIP)
                 if line[0] == '@': # Check for @ at the beginning of line
                     succes, offset, message = self.readoffset(line_as_list_lower) # Read the offset and move it
                     if succes == False:
-                        error(message)
+                        debug(message)
                         return False, message
                     debug(f'{message}')
 
@@ -398,7 +388,7 @@ class Script: # Unfinished (WIP)
                         succes1, endian = self.setendian(line_as_list_lower)
                         succes2, message = self.search(offset, line_as_list_lower, line, endian)
                         if succes1 == False or succes2 == False:
-                            error(message)
+                            debug(message)
                             return False, message
                         debug(f'{message}')
                         offset = self.current_offset
@@ -407,21 +397,21 @@ class Script: # Unfinished (WIP)
                         succes1, endian = self.setendian(line_as_list_lower)
                         succes2, message = self.readvalue(offset, line_as_list_lower, endian, ui_name)
                         if succes1 == False or succes2 == False:
-                            error(message)
+                            debug(message)
                             return False, message
                         debug(f'{message}')
 
                     if 'array' in line: # run a segment
                         success, message = self.runarray(line_as_list, line_as_list_lower, buffered_line, ui_name)
                         if success == False:
-                            error(message)
+                            debug(message)
                             return False, message
                         debug(message)
 
                     if 'function' in line:
                         success, message = self.runfunction(line_as_list, line_as_list_lower, buffered_line, ui_name)
                         if success == False:
-                            error(message)
+                            debug(message)
                             return False, message
                         debug(message)
 
@@ -533,14 +523,14 @@ class Script: # Unfinished (WIP)
                     self.array_active = False
                     line = f.readline()
         print('Script: Finished')
-        return True, 'Script ran successfully'
+        return True, self.file
 
     def readoffset(self, line: list) -> tuple[bool, int, str]:
 
         if line[0] == '@':
             offset = line[1].lower()
         else:
-            return False, -1, 'Syntax error at "@", check that there is a space after "@"'
+            return False, -1, 'Syntax debug at "@", check that there is a space after "@"'
         dev(f'offset is {offset}')
 
         if 'repeat' in line and self.first_repeat == False and 'search' not in line: # If a read is repeated it adds the typelength to the offset
@@ -817,16 +807,3 @@ class Script: # Unfinished (WIP)
         self.function_line = self.nested_function_buffer[self.nested_function_counter]['current line']
         self.function = self.segments[self.function_name]
         del self.nested_function_buffer[self.nested_function_counter]
-
-def run_script():
-    script = Script(cf.current_file, suites)
-    dpg.configure_item(item='message_display', label=cs.settings.language[17])
-    success = script.run()
-    if success == False:
-        dpg.configure_item(item='message_display', label=cs.settings.language[32])
-    else:
-        dpg.configure_item(item='message_display', label=cs.settings.language[31])
-    if mw.editor_is_built == False:
-        mw.build_editor()
-    dev(script.file)
-    mw.add_file_tab(cf.current_file)
