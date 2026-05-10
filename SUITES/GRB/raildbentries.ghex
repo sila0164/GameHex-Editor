@@ -1,0 +1,16 @@
+list: raildb
+
+TYPE: uint64
+
+None_Cover.RailAttachmentDBEntry: 174315056083
+ATPIAL_Laser_BASE.RailAttachmentDBEntry: 200249436414
+ATPIALx3_Laser_BASE.RailAttachmentDBEntry: 231412108472
+ATPIAL_FlashLight.RailAttachmentDBEntry: 231412108473
+PistolLaser.RailAttachmentDBEntry: 707338485264
+None_Empty.RailAttachmentDBEntry: 707338615168
+RangeFinder_BASE.RailAttachmentDBEntry: 1058996440857
+Y1E1_PistolLaser_Hardballer45.RailAttachmentDBEntry: 1539516991975
+Y1E1_ATPIAL_Laser_Mk14_Miter.RailAttachmentDBEntry: 1539516994993
+MAWL-DA_Laser_BASE.RailAttachmentDBEntry: 1656563002250
+RailFake.RailAttachmentDBEntry: 1698309492041
+ATPIAL_Laser_DROID.RailAttachmentDBEntry: 1766114892118

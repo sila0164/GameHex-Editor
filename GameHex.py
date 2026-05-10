@@ -37,6 +37,7 @@ def open_button():
     filepath = filedialog.askopenfilename()
     if filepath != '':
         tempfile = File(filepath)
+        print(f'\n\n---------\n\nSelected file: {tempfile.fullname}\n\n')
     else:
         print('No file selected')
         return
@@ -48,8 +49,11 @@ def open_button():
         return
     script = ghex.Script(tempfile, suites)
     global file
-    success, file = script.run()
-    mw.load_file_to_ui(file)
+    if file != None:
+        mw.reset_editor() # Removes the data from a loaded file, if any
+    success, file = script.run() # Runs the script defined for the file
+    mw.load_file_to_ui(file) # Loads the read data from the file to the ui
+
 
 def save_button():
     mw.write_file_from_ui(file)

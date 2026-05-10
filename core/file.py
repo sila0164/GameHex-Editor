@@ -14,7 +14,6 @@ class File:
         self.name, tempextension = os.path.splitext(self.fullname)
         self.extension = tempextension.lstrip('.') 
         self.stat = {} # a dictionary of all added stats for each file
-        self.parent = {} # a dictionary for saving what parent values belong to.
         self.stat_id = 0
         self.hasbeenwritten = False
 
@@ -39,7 +38,7 @@ class File:
             valueread = int.from_bytes(valuehex, byteorder=endian, signed=True)
         return valueread
 
-    def saveoffset(self, type: str, title: str, offset: int, endian: str, hide: bool, removable: bool, newvalue: int | float | None, dict: dict | None, parent: str): # reads and saves a "stat" from a specific offset
+    def saveoffset(self, type: str, title: str, offset: int, endian: str, hide: bool, removable: bool, addable: bool, newvalue: int | float | None, dict: dict | None): # reads and saves a "stat" from a specific offset
         id = str(self.stat_id)
         self.stat_id += 1
         self.stat[id] = {}
@@ -52,15 +51,15 @@ class File:
         self.stat[id]['hidden'] = hide
         self.stat[id]["newvalue"] = newvalue
         self.stat[id]["removable"] = removable
-        self.stat[id]['parent'] = parent
+        self.stat[id]['addable'] = addable
         if dict != None:
             if not str(self.stat[id]['value']) in self.stat[id]['dict']['list_reverse']: # If the value is not on the list, add it as 'Unknown'
                 self.stat[id]['dict']['list'][f'Unknown: ' + type] = str(self.stat[id]['value'])
                 self.stat[id]['dict']['list_reverse'][str(self.stat[id]['value'])] = f'Unknown: ' + type
-        dev(f'File: New stat: {id} - {title}: {self.stat[id]['value']} - {type} @ {offset}')
+        dev(f'File.saveoffset: New stat: ID: {id} - Name: {title} - Value: {self.stat[id]['value']} - {type} @ {offset}')
             
     def dictsearch(self, dict, type, offset, endian: str, backwards:bool, cap=None) -> int:
-        dev(f'File: Searching from dict: For {type} from list. Starting @ {offset}')
+        dev(f'File: Searching from dict for {type} from list. Starting @ {offset}')
         if cap == None:
             cap = self.maxoffset
         else:
@@ -75,7 +74,7 @@ class File:
                 dev(f"File: Found {search} @ {searchoffset}")
                 return searchoffset
             searchoffset += search_direction
-        dev(f"File: Failed to find value in {dict}: Reached {cap}")
+        dev(f"File: Failed to find value. Reached cap: {cap} \n\n{dict}: \n\n")
         return 0
 
     def intsearch(self, searchstrings: list, type: str, fromoffset: int, endian: str, backwards:bool, cap=None) -> int:
@@ -134,8 +133,3 @@ class File:
                 else:
                     dev(f'File: Skipping {id_as_int} - {id['title']}, no new value')
         self.hasbeenwritten = True
-
-    def saveparent(self, name, removable, parent):
-        self.parent[name] = {}
-        self.parent[name]['removable'] = removable
-        self.parent[name]['parent'] = parent

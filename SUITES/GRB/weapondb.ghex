@@ -67,88 +67,90 @@ File: GR_WeaponDBEntry
 # ADD: attachments
 @ +22 read uint8 'Barrel Amount'
 
-segment: barrel
+array: barrel
 @ read barrels 'Barrel'
 @ read uint8 hidden value 0 'Spacer (Dont edit)'
 end
 
-@ search barrels segment barrel repeat 4
+@ search barrels array barrel repeat -1 removable addable
 
 
 @ search uint32 1176597217
 @ +4 read uint8 'Magazine Amount'
 
-segment: magazine
+array: magazine
 @ read magazines 'Magazine'
 @ read uint8 hidden value 0 'Spacer (Dont edit)'
 end
 
-@ search magazines segment magazine repeat -1
+@ search magazines array magazine repeat -1 removable addable
 
 
 @ search uint32 1176597217
 @ +4 read uint8 'Muzzle Amount'
 
-segment: muzzle
-@ read muzzles 'Muzzle'
+array: muzzle
+@ read muzzledb 'Muzzle'
 @ read uint8 hidden value 0 'Spacer (Dont edit)'
 end
 
-@ search muzzles segment muzzle repeat -1
+@ search muzzledb array muzzle repeat -1 removable addable
 
 
 @ search uint32 1176597217
 @ +4 read uint8 'Rail Amount'
 
-segment: rail
-@ read rails 'Rail'
+array: rail
+@ read raildb 'Rail'
 @ read uint8 hidden value 0 'Spacer (Dont edit)'
 end
 
-@ search rails segment rail repeat -1
+@ search raildb array rail repeat -1 removable addable
 
 
 @ search uint32 1176597217
 @ +4 read uint8 'Scope Amount'
 
-segment: scope
-@ read scopes 'Scope'
+array: scope
+@ read scopedb 'Scope'
 @ read uint8 hidden value 0 'Spacer (Dont edit)'
 end
 
-@ search scopes segment scope repeat -1
+@ search scopedb array scope repeat -1 removable addable
 
 
 @ search uint32 1176597217
 @ +4 read uint8 'Stock Amount'
 
-segment: stock
-@ read stocks 'Stock'
+array: stock
+@ read stockdb 'Stock'
 @ read uint8 hidden value 0 'Spacer (Dont edit)'
 end
 
-@ search stocks segment stock repeat -1
+@ search stockdb array stock repeat -1 removable addable
 
 
 @ search uint32 1176597217
 @ +4 read uint8 'Trigger Amount'
 
-segment: trigger
-@ read triggers 'Trigger'
+array: trigger
+@ read triggerdb 'Trigger'
 @ read uint8 hidden value 0 'Spacer (Dont edit)'
 end
 
-@ search triggers segment trigger repeat -1
+@ search triggerdb array trigger repeat -1 removable addable
 
-
+node: Underbarrel
 @ search uint32 1176597217
 @ +4 read uint8 'Underbarrrel Amount'
 
-segment: underbarrel
-@ read underbarrels 'Underbarrel'
+array: underbarrel
+@ read underbarreldb 'Underbarrel'
 @ read uint8 hidden value 0 'Spacer (Dont edit)'
 end
 
-@ search underbarrels segment underbarrel repeat -1
+@ search underbarreldb array underbarrel repeat -1 removable addable
+
+
 
 

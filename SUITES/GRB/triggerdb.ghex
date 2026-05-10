@@ -1,0 +1,15 @@
+list: triggerdb
+
+TYPE: uint64
+
+Single_Burst3: 205425835896
+Single_Single: 205425835898
+FullAuto_Burst3: 205425835900
+FullAuto_Single: 205425835901
+Burst3_Single_DPCTD: 226044170358
+FullAuto_FullAuto: 524247274091
+Single_Single_HIDDEN: 1105626151815
+Rocket8    [-BuildTag- WPN_AT_TRIGGER_Rocket8]: 1403685884587
+Full_Burst2: 1695616244035
+Single_Burst2: 1695616466441
+TriggerFake: 1698309492063

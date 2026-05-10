@@ -142,6 +142,7 @@ def cleanmultientry(string: str, separator:str=',') -> list:
 
 def readarray(path: str, start: int | None) -> tuple[bool, str, dict]:
     returndict = {}
+    dev(f'readarray: Starting at line: {start}')
     with open(path, encoding='utf-8') as f:
         if start != None:
             findline(f, start - 1)
@@ -180,6 +181,7 @@ def readarray(path: str, start: int | None) -> tuple[bool, str, dict]:
                 debug(f'Array: {name} line {line_number}: incorrect syntax:\n{line}\nIgnoring line...')
             line_number += 1
             line = f.readline()
+    dev(f'readarray: Array Name: {name}\n Full Array: {returndict}\n\n')
     return True, name, returndict
 
 def readfunction(path: str, start: int | None) -> tuple[bool, str, dict]:
@@ -254,13 +256,13 @@ class Suites:
                     self.supported_extensions[fileformat] = filepath
                     print(f'Suites: File Format Supported: {fileformat}')
             elif 'array' in line_lower and ':' in line_lower:
-                success, name, segment = readarray(filepath, start=None)
+                success, name, array = readarray(filepath, start=None)
                 if success == False:
-                    debug(f'Invalid segment: {file}. Skipping...')
+                    debug(f'Invalid array: {file}. Skipping...')
                 elif name != '':
-                    self.loaded_arrays[name] = segment    
-                    print(f'Suites: Array Loaded: {name}')
-                    dev(f'{segment}')
+                    self.loaded_arrays[name] = array    
+                    debug(f'Suites: Array Loaded: {name}')
+                    dev(f'{array}')
             else:
                 debug(f'{file} is missing valid definition on line 1:\n {line}')
 
@@ -271,7 +273,7 @@ class Script: # Unfinished (WIP)
         self.file = filepath # The currently mounted file to be read
         self.suites = suites.supported_extensions # The list of supported extensions from the Suites-class
         self.lists = suites.loaded_lists # The currently loaded lists from the Suites-class
-        self.segments = suites.loaded_arrays # The currently loaded arrays and function from the Suites-class
+        self.arrays = suites.loaded_arrays # The currently loaded arrays and function from the Suites-class
         self.current_endian = 'little' # Defaults endian. Is used to read values and is changed in the endian related functions.
         self.current_repeat = 0 # A value used to count the number of repeats down when a command is repeated
         self.first_repeat = True # A flag used to allow repeats on combined search and read commands.
@@ -283,12 +285,10 @@ class Script: # Unfinished (WIP)
         self.array_active = False # This is a flag to change from reading lines in the file to reading line from a array 
         self.array_line = 0 # keeps track of the current array line
         self.repeated_ui_names = {} # used to make multiple values with the same name have a number that itereates after the name.
-        self.skip_until_end = False # used to skip lines that are part of a segment or list in a script
+        self.skip_until_end = False # used to skip lines that are part of a array or list in a script
         self.functon_buffered_line = None # Used to return to the line when a function is repeated.
         self.array_buffered_line = None # Used to return to the line when an array is repeated.
         self.repeat_active = False # Used to stop reopeats when 0 is reached.
-        self.nodes = {} # A dictionary of the nodes to be created in the ui.
-        self.current_node = '' #Keeps track of the currently active node (if any)
         self.nested_function_buffer = {} # If a function is run within a function, this will save the state of the current function.
         self.nested_function_counter = 0
 
@@ -305,32 +305,31 @@ class Script: # Unfinished (WIP)
             line = f.readline()
             line = f.readline() # Skips the first line as that is only needed for the suite read.
             while line:
-                self.current_node = '' # Resets the node for each line
-                # This is in case we are reading a list or segment. This is done in a seperate function and they return them as a dictionary. We need to skip the lines of the list/segment.
+                # This is in case we are reading a list or array. This is done in a seperate function and they return them as a dictionary. We need to skip the lines of the list/array.
                 if self.skip_until_end == True and line.lower().strip() == 'end': #when end is reached continue normal script running.
-                    dev('Loop end has been reached')
+                    dev('Script.run: Skip end has been reached')
                     self.skip_until_end = False
                     line = f.readline()
                     line_number += 1
                     continue
-                elif self.skip_until_end == True: # when a segment is still being read keep skipping lines
-                    dev(f'Skipping line {line_number}')
+                elif self.skip_until_end == True: # when a array is still being read keep skipping lines
+                    dev(f'Script.run: Skipping line {line_number}')
                     line = f.readline()
                     line_number += 1
                     continue
 
                 # This is when the line gets read (kind of a sorting system)
-                buffered_line = line # This is used when a segment is run repeatedly to return to the line that is repeated.
+                buffered_line = line # This is used when a array is run repeatedly to return to the line that is repeated.
                 line = cleanline(line)
                 if self.function_active == True:
                     debug('')
-                    debug(f'Function line {self.function_line - 1}: {line}')
+                    debug(f'Script: Function line {self.function_line - 1}: {line}')
                 elif self.array_active == True:
                     debug('')
-                    debug(f'Array line {self.array_line - 1}: {line}')
+                    debug(f'Script: Array line {self.array_line}: {line}')
                 else:
                     debug('')
-                    debug(f'Line {line_number}: {line}')
+                    debug(f'Script: Line {line_number}: {line}')
 
                 if line == '': # Ignores empty lines
                     debug('Script: skipping empty line')
@@ -346,8 +345,8 @@ class Script: # Unfinished (WIP)
                     scriptname = os.path.basename(script_path)
                     debug(f'{scriptname} line {line_number}: Invalid Name: {line}')    
                 
-                dev(f'Script: line {line_number}: {line}')
-                dev(f'Script: name: {ui_name}')
+                dev(f'script.run: line {line_number}: {line}')
+                dev(f'script.run: ui name: {ui_name}')
 
                 # splits the line into a list for easier reading
                 line_as_list = line.split(' ') 
@@ -355,26 +354,21 @@ class Script: # Unfinished (WIP)
                 offset = None
 
                 if self.search_reached_end_of_file == True:
+                    dev('script.run: Search reached end of file')
                     line_number += 1
                     line = f.readline()
                     self.search_reached_end_of_file = False
-                    self.segment_active = False
+                    self.array_active = False
                     self.repeat_active = False
                     self.current_repeat = 0
                     continue
-
+                
                 if line[0] == '@': # Check for @ at the beginning of line
-                    succes, offset, message = self.readoffset(line_as_list_lower) # Read the offset and move it
+                    succes, offset, message = self.readoffset(line_as_list_lower, line_as_list) # Read the offset and move it
                     if succes == False:
                         debug(message)
                         return False, message
                     debug(f'{message}')
-
-                    if 'node' in line_as_list_lower:
-                        try:
-                            self.current_node = line_as_list[line_as_list_lower.index('node') + 1]
-                        except:
-                            return False, f'"node" command has incorrect/nonexisting name or is missing a name'
 
                     if 'repeat' in line_as_list_lower and self.repeat_active == False: # if the line contains repeat, set the program to repeat it repeat_amount of times.
                         succes, repeat_amount, message = self.repeat(line_as_list_lower)
@@ -401,7 +395,7 @@ class Script: # Unfinished (WIP)
                             return False, message
                         debug(f'{message}')
 
-                    if 'array' in line: # run a segment
+                    if 'array' in line: # run a array
                         success, message = self.runarray(line_as_list, line_as_list_lower, buffered_line, ui_name)
                         if success == False:
                             debug(message)
@@ -416,33 +410,33 @@ class Script: # Unfinished (WIP)
                         debug(message)
 
                     if 'function' not in line and 'array' not in line and 'read' not in line and 'search' not in line: # Changes the offset if no command is given
-                        debug(f'No commands detected. Setting offset to: {offset}')
+                        debug(f'Script: No commands detected. Setting offset to: {offset}')
                         self.current_offset = offset
                 
                 # '@' commands are done here and the following commands are seperate.
 
-                # Creates and saves a segment to be run later
+                # Creates and saves a array to be run later
                 elif 'array:' in line_as_list_lower: 
                     self.skip_until_end = True
-                    success, name, segment = readarray(script_path, start=line_number)
+                    success, name, array = readarray(script_path, start=line_number)
                     if success == False:
                         return False, 'Script: Invalid Array'
                     if name != '':
-                        self.segments[name] = segment    
-                        print(f'Script: Array Loaded: {name}')
+                        self.arrays[name] = array    
+                        debug(f'Script: Array Loaded: {name}')
                         debug(f'Array name: {name}') 
-                        debug(f'{segment}')
+                        debug(f'{array}')
 
                 elif 'function:' in line_as_list_lower: 
                     self.skip_until_end = True
-                    success, name, segment = readarray(script_path, start=line_number)
+                    success, name, array = readarray(script_path, start=line_number)
                     if success == False:
                         return False, 'Script: Invalid Function'
                     if name != '':
-                        self.segments[name] = segment    
-                        print(f'Script: Function Loaded: {name}')
+                        self.arrays[name] = array    
+                        debug(f'Script: Function Loaded: {name}')
                         debug(f'Array name: {name}') 
-                        debug(f'{segment}')
+                        debug(f'{array}')
 
                 # Creates and saves a list to be used later
                 elif 'list:' in line_as_list_lower:
@@ -450,56 +444,27 @@ class Script: # Unfinished (WIP)
                     name, dictionary = readlist(script_path, start=line_number)
                     if name != '':
                         self.lists[name] = dictionary
-                        print(f'Script: List Loaded: {name}')
-                        dev(f'{dictionary}')
+                        debug(f'Script: List Loaded: {name}')
+                        debug(f'{dictionary}')
 
-                # Creates and saves a note that values and segments can be added to.
-                elif 'node:' in line_as_list_lower and 'end' not in line_as_list_lower:
-                    node_name = line_as_list[line_as_list_lower.index('node:') + 1]
-                    if ui_name == '':
-                        if 'Node' not in self.count_unnamed:
-                            self.count_unnamed['Node'] = 0
-                        self.count_unnamed['Node'] += 1
-                        number = str(self.count_unnamed['Node'])
-                        ui_name = 'Node' + ' ' + number
-                    if ui_name not in self.repeated_ui_names:
-                        self.repeated_ui_names[ui_name] = 0
-                    self.repeated_ui_names[ui_name] += 1
-                    if self.repeated_ui_names[ui_name] != 1:
-                        ui_name = ui_name + ' ' + str(self.repeated_ui_names[ui_name])
-                    parent = None
-                    if 'node' in line_as_list_lower:
-                        try:
-                            self.current_node = line_as_list[line_as_list_lower.index('node') + 1]
-                            parent = self.current_node
-                        except:
-                            return False, f'"node" command is missing a name after it'
-
-                    self.file.saveparent(ui_name, removable=False, parent=parent)
-                    self.nodes[node_name] = ui_name
-                    self.current_node = node_name
-
-                # Sets the global endian if endian is in the line and alone. 
+                # Sets the global endian if endian is the only command in the line. 
                 elif 'endian' in line_as_list_lower:
                     self.setendian(line_as_list_lower, set_global=True)
                     debug(f'Script: Endian set to {self.current_endian}')
                 
                 #No more commands. This is logic for repeat loops.
-                if self.current_repeat != 0 and self.function_active == False:
+                if self.current_repeat != 0 and self.function_active == False and self.array_active == False:
                     self.current_repeat -= 1
-                    if 'search' in line_as_list and 'read' not in line_as_list:
-                        self.current_offset = self.current_offset + 1
-                    dev(f'repeating single line: Remaining: {self.current_repeat}')
-
+                    debug(f'Repeating single line: Remaining: {self.current_repeat}')
                     if self.current_repeat == 0:
                         dev(f'Stopping repeat')
                         line = f.readline()
                         self.first_repeat = True
                     continue
                 
-                #This is the default behaviour. If a segment is active it reads from the segment dictionary, not the file.
+                #This is the default behaviour. If an array is active it reads from the array dictionary, not the file.
                 if self.function_active == True and self.function_line not in self.function:
-                    dev('Setting self.function_active to False')
+                    dev('script.run: Setting self.function_active to False')
                     self.function_active = False
                     if self.nested_function_buffer != {}:
                         dev('Going back to nested function')
@@ -510,12 +475,13 @@ class Script: # Unfinished (WIP)
                     line = self.function[self.function_line]
                     self.function_line += 1
                 elif self.array_active == True and self.array_line not in self.array:
-                    dev('Setting self.array_active to False')
+                    dev('script.run: Setting self.array_active to False')
                     self.array_active = False
                     line = self.array_buffered_line
                     dev(line)
                 elif self.array_active == True:
                     line = self.array[self.array_line]
+                    debug(f'Script: Array Active: Line {self.array_line}: {line}')
                     self.array_line += 1
                 else:
                     line_number += 1
@@ -525,15 +491,15 @@ class Script: # Unfinished (WIP)
         print('Script: Finished')
         return True, self.file
 
-    def readoffset(self, line: list) -> tuple[bool, int, str]:
+    def readoffset(self, line_lower: list, line: list) -> tuple[bool, int, str]:
 
         if line[0] == '@':
-            offset = line[1].lower()
+            offset = line_lower[1]
         else:
             return False, -1, 'Syntax debug at "@", check that there is a space after "@"'
         dev(f'offset is {offset}')
 
-        if 'repeat' in line and self.first_repeat == False and 'search' not in line: # If a read is repeated it adds the typelength to the offset
+        if 'repeat' in line_lower and self.first_repeat == False and 'search' not in line_lower: # If a read is repeated it adds the typelength to the offset
             offset = self.current_offset + self.repeat_type_length
             self.current_offset = offset
             return True, offset, f'Repeat offset set to {offset}'
@@ -542,6 +508,7 @@ class Script: # Unfinished (WIP)
             offset = self.current_offset
             dev(f'offset set to current {offset}')
             del line[0]
+            del line_lower[0]
         elif '+' in offset: #If the offset string contains '+' or '-' add it to self.currentoffset
             offset = offset.removeprefix('+')
             success, offset = cleannumber(offset)
@@ -552,7 +519,8 @@ class Script: # Unfinished (WIP)
                 dev(str(offset))
             else: 
                 return False, -1, 'Invalid value for offset'
-            del line[0:2]
+            del line[0:1]
+            del line_lower[0:1]
         elif '-' in offset:
             offset = offset.removeprefix('-')
             success, offset = cleannumber(offset)
@@ -563,7 +531,8 @@ class Script: # Unfinished (WIP)
                 dev(str(offset))
             else: 
                 return False, -1, 'Invalid value for offset'
-            del line[0:2]
+            del line[0:1]
+            del line_lower[0:1]
         else:
             dev(f'setting to {offset}')
             success, offset = cleannumber(offset)
@@ -571,9 +540,10 @@ class Script: # Unfinished (WIP)
                 return False, -1, 'Offset value is invalid'
             self.current_offset = offset
             dev('set')
-            del line[0:2]
+            del line[0:1]
+            del line_lower[0:1]
 
-        return True, offset, f'Offset set to {offset}'
+        return True, offset, f'Script: Offset set to {offset}'
 
     def readvalue(self, offset: int, line: list, endian: str, ui_name: str) -> tuple[bool, str]: 
         readindex = line.index('read')
@@ -632,25 +602,22 @@ class Script: # Unfinished (WIP)
                     return False, f'{new_value} is not a valid integer'
             debug(f'Presetting to {new_value}')
 
-        if self.array_active == True:
-            parent = self.array_name
-        elif self.current_node != '':
-            parent = self.nodes[self.current_node]
-        else:
-            parent = self.current_node
-
-
         removable = False
         if 'removable' in line:
             removable = True
 
+        addable = False
+        if 'addable' in line:
+            addable = True
+
         self.current_offset = offset + typelengths[read_type]
 
-        self.file.saveoffset(read_type, ui_name, offset, endian, hide=hide_value, removable = removable, newvalue=new_value, dict=list_from_file, parent=parent)
+        self.file.saveoffset(read_type, ui_name, offset, endian, hide=hide_value, removable = removable, addable = addable, newvalue=new_value, dict=list_from_file)
         return True, f'Read {read_type} @ {offset} as {ui_name}'
 
     def search(self, offset: int, line_as_list: list, line: str, endian: str) -> tuple[bool, str]:
-        
+        debug(f'Script: Starting search')
+
         backwards = False
         if '-search' in line_as_list:
             searchindex = line_as_list.index('-search')
@@ -701,13 +668,14 @@ class Script: # Unfinished (WIP)
         # The searchfunctions return 0 if they couldnt find the value.
         if new_offset == 0 and self.current_repeat == 0:
             return False, f'Could not find {search_value} in file'
-        elif new_offset == 0 and self.current_repeat != 0:
+        elif new_offset == 0 and self.current_repeat < 0:
             self.current_repeat = 0
             self.current_offset = self.first_search_offset
             self.first_search_offset = -1
             self.search_reached_end_of_file = True
             self.repeat_active = False
-            self.segment_active = False
+            self.array_active = False
+            self.function_active = False
             return True, f'Search Reached end of file, resetting to starting offset.'
         else:
             self.current_offset = new_offset
@@ -749,6 +717,8 @@ class Script: # Unfinished (WIP)
             return False, f'Array is missing function name after command.'
         self.array_buffered_line = buffered_line
 
+        debug(f'Script: Running array: {array_name}')
+
         removable = False
         if 'removable' in line_as_list_lower:
             removable = True
@@ -764,20 +734,19 @@ class Script: # Unfinished (WIP)
         self.repeated_ui_names[ui_name] += 1
         if self.repeated_ui_names[ui_name] != 1:
             ui_name = ui_name + ' ' + str(self.repeated_ui_names[ui_name])
+        
+        dev(f'Script.runarray: array name: {ui_name}')
 
-        if array_name in self.segments:
-            self.array = self.segments[array_name]
+        if array_name in self.arrays:
+            self.array = self.arrays[array_name]
             self.array_name = ui_name
             self.array_active = True
             self.array_line = 1
-            parent = None
-            if self.current_node != '':
-                parent = self.nodes[self.current_node]
-            self.file.saveparent(self.array_name, removable=removable, parent = parent)
+            dev(f'Script.runarray: {array_name} found in loaded arrays')
         else:
             return False, f'Array {array_name} not found'
 
-        return True, f'Array started succesfully'     
+        return True, f'Script: Array {array_name} started succesfully'     
     
     def runfunction(self, line_as_list: list, line_as_list_lower: list, buffered_line: str, ui_name: str) -> tuple[bool, str]:
         if self.function_active == True:
@@ -791,8 +760,8 @@ class Script: # Unfinished (WIP)
             return False, f'Function is missing function name after command.'
         self.function_buffered_line = buffered_line
 
-        if function_name in self.segments:
-            self.function = self.segments[function_name]
+        if function_name in self.arrays:
+            self.function = self.arrays[function_name]
             self.function_name = ui_name
             self.function_active = True
             self.function_line = 1
@@ -805,5 +774,5 @@ class Script: # Unfinished (WIP)
         self.nested_function_counter -= 1
         self.function_name = self.nested_function_buffer[self.nested_function_counter]['name']
         self.function_line = self.nested_function_buffer[self.nested_function_counter]['current line']
-        self.function = self.segments[self.function_name]
+        self.function = self.arrays[self.function_name]
         del self.nested_function_buffer[self.nested_function_counter]
